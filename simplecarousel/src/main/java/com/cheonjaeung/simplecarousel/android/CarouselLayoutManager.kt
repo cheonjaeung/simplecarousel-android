@@ -25,7 +25,7 @@ class CarouselLayoutManager : RecyclerView.LayoutManager, RecyclerView.SmoothScr
     /**
      * Enable circular mode which means that the first/last item will be connected to the first/last.
      */
-    var circular: Boolean = true
+    var circular: Boolean = DEFAULT_CIRCULAR
         set(value) {
             if (field != value) {
                 field = value
@@ -74,7 +74,7 @@ class CarouselLayoutManager : RecyclerView.LayoutManager, RecyclerView.SmoothScr
     private var pendingPosition: Int = NO_POSITION
 
     /**
-     * Constructs a [CarouselLayoutManager] with default orientation.
+     * Constructs a [CarouselLayoutManager] with default options.
      */
     @Suppress("unused")
     constructor() : this(DEFAULT_ORIENTATION)
@@ -83,8 +83,18 @@ class CarouselLayoutManager : RecyclerView.LayoutManager, RecyclerView.SmoothScr
      * Constructs a [CarouselLayoutManager] with specific orientation.
      */
     @Suppress("unused")
-    constructor(@Orientation orientation: Int) : super() {
+    constructor(@Orientation orientation: Int) : this(orientation, DEFAULT_CIRCULAR)
+
+    /**
+     * Constructs a [CarouselLayoutManager] with specific circular mode.
+     */
+    @Suppress("unused")
+    constructor(circular: Boolean) : this(DEFAULT_ORIENTATION, circular)
+
+    @Suppress("unused")
+    constructor(@Orientation orientation: Int, circular: Boolean) : super() {
         this.orientation = orientation
+        this.circular = circular
         this.layoutHelper.orientationHelper = orientationHelper
         this.layoutHelper.circular = circular
         this.anchorInfo.orientationHelper = orientationHelper
@@ -104,6 +114,7 @@ class CarouselLayoutManager : RecyclerView.LayoutManager, RecyclerView.SmoothScr
     ) : super() {
         val properties = getProperties(context, attrs, defStyleAttr, defStyleRes)
         this.orientation = properties.orientation
+        this.circular = DEFAULT_CIRCULAR
         this.layoutHelper.orientationHelper = orientationHelper
         this.layoutHelper.circular = circular
         this.anchorInfo.orientationHelper = orientationHelper
@@ -570,6 +581,7 @@ class CarouselLayoutManager : RecyclerView.LayoutManager, RecyclerView.SmoothScr
         const val VERTICAL: Int = RecyclerView.VERTICAL
 
         private const val DEFAULT_ORIENTATION: Int = VERTICAL
+        private const val DEFAULT_CIRCULAR: Boolean = true
 
         private const val DIRECTION_START: Int = -1
         private const val DIRECTION_END: Int = 1
