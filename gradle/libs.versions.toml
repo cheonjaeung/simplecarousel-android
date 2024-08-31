@@ -18,7 +18,7 @@ androidx-test-ext-junit = { group = "androidx.test.ext", name = "junit", version
 androidx-test-espresso-core = { group = "androidx.test.espresso", name = "espresso-core", version = "3.6.1" }
 
 # Sample Dependencies
-androidx-appcompat = { group = "androidx.appcompat", name = "appcompat", version = "1.7.0" }
 android-material = { group = "com.google.android.material", name = "material", version = "1.12.0" }
+androidx-appcompat = { group = "androidx.appcompat", name = "appcompat", version = "1.7.0" }
 androidx-activity = { group = "androidx.activity", name = "activity", version = "1.9.0" }
 androidx-constraintlayout = { group = "androidx.constraintlayout", name = "constraintlayout", version = "2.1.4" }

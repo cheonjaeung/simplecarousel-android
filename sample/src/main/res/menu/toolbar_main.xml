@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
+
+    <item
+        android:id="@+id/orientationHorizontal"
+        android:title="@string/orientation_horizontal"
+        android:contentDescription="@string/orientation_horizontal"
+        app:showAsAction="never" />
+
+    <item
+        android:id="@+id/orientataionVertical"
+        android:title="@string/orientation_vertical"
+        android:contentDescription="@string/orientation_vertical"
+        app:showAsAction="never" />
+</menu>

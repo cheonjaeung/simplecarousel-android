@@ -36,10 +36,11 @@ android {
 }
 
 dependencies {
+    implementation(project(":simplecarousel"))
+
     implementation(libs.androidx.core)
     implementation(libs.androidx.appcompat)
     implementation(libs.android.material)
     implementation(libs.androidx.activity)
     implementation(libs.androidx.constraintlayout)
-    implementation(project(":simplecarousel"))
 }
