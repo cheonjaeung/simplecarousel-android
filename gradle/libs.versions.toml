@@ -6,6 +6,7 @@ androidGradlePlugin = "8.5.1"
 kotlin-android = { id = "org.jetbrains.kotlin.android", version.ref = "kotlin" }
 android-application = { id = "com.android.application", version.ref = "androidGradlePlugin" }
 android-library = { id = "com.android.library", version.ref = "androidGradlePlugin" }
+maven-publish = { id = "com.vanniktech.maven.publish", version = "0.28.0" }
 
 [libraries]
 # Library Dependencies
