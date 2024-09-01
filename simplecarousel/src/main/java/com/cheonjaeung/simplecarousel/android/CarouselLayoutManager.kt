@@ -197,13 +197,24 @@ class CarouselLayoutManager : RecyclerView.LayoutManager, RecyclerView.SmoothScr
             DIRECTION_END
         }
         if (layoutHelper.layoutDirection == DIRECTION_START) {
+            // Fill to main direction
             layoutHelper.updateForFillingToStart(anchorInfo.position, anchorInfo.coordinate)
-        } else {
-            layoutHelper.updateForFillingToEnd(anchorInfo.position, anchorInfo.coordinate)
-        }
+            fill(recycler, state)
 
-        // Fill items with layout helper.
-        fill(recycler, state)
+            // Fill to opposite direction if not filled
+            layoutHelper.updateForFillingToEnd(anchorInfo.position, anchorInfo.coordinate)
+            layoutHelper.currentPosition += layoutHelper.itemDirection
+            fill(recycler, state)
+        } else {
+            // Fill to main direction
+            layoutHelper.updateForFillingToEnd(anchorInfo.position, anchorInfo.coordinate)
+            fill(recycler, state)
+
+            // Fill to opposite direction if not filled
+            layoutHelper.updateForFillingToStart(anchorInfo.position, anchorInfo.coordinate)
+            layoutHelper.currentPosition += layoutHelper.itemDirection
+            fill(recycler, state)
+        }
     }
 
     /**
