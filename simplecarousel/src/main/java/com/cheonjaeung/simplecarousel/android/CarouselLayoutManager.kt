@@ -29,7 +29,7 @@ class CarouselLayoutManager : RecyclerView.LayoutManager, RecyclerView.SmoothScr
         set(value) {
             if (field != value) {
                 field = value
-                layoutHelper.circular = value
+                layoutHelper.setCircular(value)
                 requestLayout()
             }
         }
@@ -47,8 +47,8 @@ class CarouselLayoutManager : RecyclerView.LayoutManager, RecyclerView.SmoothScr
             if (value != field) {
                 field = value
                 orientationHelper = OrientationHelper.createOrientationHelper(this, value)
-                layoutHelper.orientationHelper = orientationHelper
-                anchorInfo.orientationHelper = orientationHelper
+                layoutHelper.setOrientationHelper(orientationHelper)
+                anchorInfo.setOrientationHelper(orientationHelper)
                 requestLayout()
             }
         }
@@ -95,9 +95,9 @@ class CarouselLayoutManager : RecyclerView.LayoutManager, RecyclerView.SmoothScr
     constructor(@Orientation orientation: Int, circular: Boolean) : super() {
         this.orientation = orientation
         this.circular = circular
-        this.layoutHelper.orientationHelper = orientationHelper
-        this.layoutHelper.circular = circular
-        this.anchorInfo.orientationHelper = orientationHelper
+        this.layoutHelper.setOrientationHelper(orientationHelper)
+        this.layoutHelper.setCircular(circular)
+        this.anchorInfo.setOrientationHelper(orientationHelper)
     }
 
     /**
@@ -115,9 +115,9 @@ class CarouselLayoutManager : RecyclerView.LayoutManager, RecyclerView.SmoothScr
         val properties = getProperties(context, attrs, defStyleAttr, defStyleRes)
         this.orientation = properties.orientation
         this.circular = DEFAULT_CIRCULAR
-        this.layoutHelper.orientationHelper = orientationHelper
-        this.layoutHelper.circular = circular
-        this.anchorInfo.orientationHelper = orientationHelper
+        this.layoutHelper.setOrientationHelper(orientationHelper)
+        this.layoutHelper.setCircular(circular)
+        this.anchorInfo.setOrientationHelper(orientationHelper)
     }
 
     override fun isAutoMeasureEnabled(): Boolean {
@@ -182,20 +182,16 @@ class CarouselLayoutManager : RecyclerView.LayoutManager, RecyclerView.SmoothScr
         if (!anchorInfo.isValid || pendingSavedState != null || pendingPosition != NO_POSITION) {
             anchorInfo.invalidate()
             updateAnchorInfoForLayout(anchorInfo, state)
-            anchorInfo.isValid = true
+            anchorInfo.validate()
         }
 
-        layoutHelper.shouldRecycle = false
+        layoutHelper.setShouldRecycle(false)
 
         // Moves current attached views to scrap for filling items.
         detachAndScrapAttachedViews(recycler)
 
         // Update layout helper by layout direction.
-        layoutHelper.layoutDirection = if (layoutHelper.latestScrollDelta < 0) {
-            DIRECTION_START
-        } else {
-            DIRECTION_END
-        }
+        layoutHelper.updateLayoutDirectionFromLatestScrollDelta()
         if (layoutHelper.layoutDirection == DIRECTION_START) {
             // Fill to main direction
             layoutHelper.updateForFillingToStart(anchorInfo.position, anchorInfo.coordinate)
@@ -203,7 +199,7 @@ class CarouselLayoutManager : RecyclerView.LayoutManager, RecyclerView.SmoothScr
 
             // Fill to opposite direction if not filled
             layoutHelper.updateForFillingToEnd(anchorInfo.position, anchorInfo.coordinate)
-            layoutHelper.currentPosition += layoutHelper.itemDirection
+            layoutHelper.moveCurrentPosition(state)
             fill(recycler, state)
         } else {
             // Fill to main direction
@@ -212,7 +208,7 @@ class CarouselLayoutManager : RecyclerView.LayoutManager, RecyclerView.SmoothScr
 
             // Fill to opposite direction if not filled
             layoutHelper.updateForFillingToStart(anchorInfo.position, anchorInfo.coordinate)
-            layoutHelper.currentPosition += layoutHelper.itemDirection
+            layoutHelper.moveCurrentPosition(state)
             fill(recycler, state)
         }
     }
@@ -334,7 +330,7 @@ class CarouselLayoutManager : RecyclerView.LayoutManager, RecyclerView.SmoothScr
             val anchorPosition = getPosition(anchorView)
             layoutHelper.updateForScrollingToEnd(delta, anchorView, anchorPosition, state)
         }
-        layoutHelper.shouldRecycle = true
+        layoutHelper.setShouldRecycle(true)
 
         // Fill items by scrolling amount.
         val filledSpace = fill(recycler, state)
@@ -350,7 +346,7 @@ class CarouselLayoutManager : RecyclerView.LayoutManager, RecyclerView.SmoothScr
             delta
         }
         orientationHelper.offsetChildren(-scrolled)
-        layoutHelper.latestScrollDelta = scrolled
+        layoutHelper.setLatestScrollDelta(scrolled)
         return scrolled
     }
 
@@ -364,7 +360,7 @@ class CarouselLayoutManager : RecyclerView.LayoutManager, RecyclerView.SmoothScr
 
         if (layoutHelper.scrollingOffset != SCROLLING_OFFSET_NAN) {
             if (layoutHelper.availableSpace < 0) {
-                layoutHelper.scrollingOffset += layoutHelper.availableSpace
+                layoutHelper.adjustScrollOffset(layoutHelper.availableSpace)
             }
         }
 
@@ -412,16 +408,15 @@ class CarouselLayoutManager : RecyclerView.LayoutManager, RecyclerView.SmoothScr
             layoutDecoratedWithMargins(view, left, top, right, bottom)
 
             // Update layout helper for the next view.
-            layoutHelper.offset += viewSize * layoutHelper.layoutDirection
-            layoutHelper.availableSpace -= viewSize
+            layoutHelper.updateForFillingNext(viewSize)
             remainingSpace -= viewSize
 
             // Update scrolling offset if it triggered by scrolling.
             if (layoutHelper.scrollingOffset != SCROLLING_OFFSET_NAN) {
                 if (layoutHelper.availableSpace < 0) {
-                    layoutHelper.scrollingOffset += layoutHelper.availableSpace
+                    layoutHelper.adjustScrollOffset(layoutHelper.availableSpace)
                 }
-                layoutHelper.scrollingOffset += viewSize
+                layoutHelper.adjustScrollOffset(viewSize)
             }
 
             // Recycle out of bounds items after filling.
@@ -653,57 +648,101 @@ class CarouselLayoutManager : RecyclerView.LayoutManager, RecyclerView.SmoothScr
      * Helper class to hold temporary values while [CarouselLayoutManager] is laying out items.
      * It holds various values like where layout should start, current adapter position and others.
      */
-    private data class LayoutHelper(
+    private class LayoutHelper {
         /**
          * If `true`, layout manager should recycle out of bounds views after layout finished.
          */
-        var shouldRecycle: Boolean = false,
+        var shouldRecycle: Boolean = false
+            private set
 
         /**
          * Pixel offset where layout should start.
          */
-        var offset: Int = 0,
+        var offset: Int = 0
+            private set
 
         /**
          * The amount of pixel offset this manager can scroll without creating new views.
          * It used only when scrolling.
          */
-        var scrollingOffset: Int = SCROLLING_OFFSET_NAN,
+        var scrollingOffset: Int = SCROLLING_OFFSET_NAN
+            private set
 
         /**
          * Current position on the recycler view adapter.
          */
-        var currentPosition: Int = RecyclerView.NO_POSITION,
+        var currentPosition: Int = RecyclerView.NO_POSITION
+            private set
 
         /**
          * Pixel size that the layout manager should fill.
          */
-        var availableSpace: Int = 0,
+        var availableSpace: Int = 0
+            private set
 
         /**
          * Direction where the layout manager should fill.
          */
-        var layoutDirection: Int = DIRECTION_END,
+        var layoutDirection: Int = DIRECTION_END
+            private set
 
         /**
          * Direction where the layout manager traverse adapter items.
          */
-        var itemDirection: Int = DIRECTION_END,
+        var itemDirection: Int = DIRECTION_END
+            private set
 
         /**
          * The latest scroll delta.
          */
-        var latestScrollDelta: Int = 0,
+        var latestScrollDelta: Int = 0
+            private set
 
         /**
          * Is the layout manager's circular mode enabled.
          */
         var circular: Boolean = true
-    ) {
+            private set
+
         /**
          * Reference of [OrientationHelper] in the layout manager.
          */
         lateinit var orientationHelper: OrientationHelper
+            private set
+
+        fun setShouldRecycle(shouldRecycle: Boolean) {
+            this.shouldRecycle = shouldRecycle
+        }
+
+        fun setCircular(circular: Boolean) {
+            this.circular = circular
+        }
+
+        fun setOrientationHelper(orientationHelper: OrientationHelper) {
+            this.orientationHelper = orientationHelper
+        }
+
+        fun setLatestScrollDelta(latestScrollDelta: Int) {
+            this.latestScrollDelta = latestScrollDelta
+        }
+
+        /**
+         * Adjusts [scrollingOffset] by the [value].
+         */
+        fun adjustScrollOffset(value: Int) {
+            this.scrollingOffset += value
+        }
+
+        /**
+         * Updates [layoutDirection] from [latestScrollDelta].
+         */
+        fun updateLayoutDirectionFromLatestScrollDelta() {
+            this.layoutDirection = if (this.latestScrollDelta >= 0) {
+                DIRECTION_END
+            } else {
+                DIRECTION_START
+            }
+        }
 
         /**
          * Updates the layout helper to layout items to the start direction.
@@ -772,6 +811,17 @@ class CarouselLayoutManager : RecyclerView.LayoutManager, RecyclerView.SmoothScr
         }
 
         /**
+         * Updates [offset] and [availableSpace] to fill next item.
+         * This method must called whenever one item is placed in layout.
+         *
+         * @param viewSize Placed view size in pixels.
+         */
+        fun updateForFillingNext(viewSize: Int) {
+            this.offset += viewSize * this.layoutDirection
+            this.availableSpace -= viewSize
+        }
+
+        /**
          * Returns `true` if there are more items in the adapter.
          */
         fun hasNext(state: RecyclerView.State): Boolean {
@@ -788,9 +838,16 @@ class CarouselLayoutManager : RecyclerView.LayoutManager, RecyclerView.SmoothScr
          */
         fun next(recycler: RecyclerView.Recycler, state: RecyclerView.State): View {
             val view = recycler.getViewForPosition(currentPosition)
-            currentPosition += itemDirection
-            validateCurrentPositionForCircular(state)
+            moveCurrentPosition(state)
             return view
+        }
+
+        /**
+         * Moves [currentPosition] to next position without getting item.
+         */
+        fun moveCurrentPosition(state: RecyclerView.State) {
+            this.currentPosition += itemDirection
+            validateCurrentPositionForCircular(state)
         }
 
         /**
@@ -806,32 +863,54 @@ class CarouselLayoutManager : RecyclerView.LayoutManager, RecyclerView.SmoothScr
                 }
             }
         }
+
+        override fun toString(): String {
+            return "LayoutHelper(" +
+                "shouldRecycle=$shouldRecycle, " +
+                "offset=$offset, " +
+                "scrollingOffset=$scrollingOffset, " +
+                "currentPosition=$currentPosition, " +
+                "availableSpace=$availableSpace, " +
+                "layoutDirection=$layoutDirection, " +
+                "itemDirection=$itemDirection, " +
+                "latestScrollDelta=$latestScrollDelta, " +
+                "circular=$circular" +
+                ")"
+        }
     }
 
     /**
      * Helper class to hold temporary values while [CarouselLayoutManager] is laying out items.
-     * It holds values about the anchor view
+     * It holds values about the anchor view.
      */
-    private data class AnchorInfo(
+    private class AnchorInfo {
         /**
          * Position of the anchor view.
          */
-        var position: Int = NO_POSITION,
+        var position: Int = NO_POSITION
+            private set
 
         /**
          * Coordinate of the anchor view.
          */
-        var coordinate: Int = INVALID_OFFSET,
+        var coordinate: Int = INVALID_OFFSET
+            private set
 
         /**
          * If `false`, the anchor view should be updated.
          */
         var isValid: Boolean = false
-    ) {
+            private set
+
         /**
          * Reference of [OrientationHelper] in the layout manager.
          */
         lateinit var orientationHelper: OrientationHelper
+            private set
+
+        fun setOrientationHelper(orientationHelper: OrientationHelper) {
+            this.orientationHelper = orientationHelper
+        }
 
         /**
          * Updates anchor info from nothing. It means that there is no view to use as the anchor.
@@ -883,10 +962,28 @@ class CarouselLayoutManager : RecyclerView.LayoutManager, RecyclerView.SmoothScr
             this.coordinate = orientationHelper.getDecoratedStart(view)
         }
 
+        /**
+         * Makes it valid. After validate, [AnchorInfo] is not updated until [invalidate].
+         */
+        fun validate() {
+            this.isValid = true
+        }
+
+        /**
+         * Makes it invalid and updatable.
+         */
         fun invalidate() {
             position = NO_POSITION
             coordinate = INVALID_OFFSET
             isValid = false
+        }
+
+        override fun toString(): String {
+            return "AnchorInfo(" +
+                "position=$position, " +
+                "coordinate=$coordinate, " +
+                "isValid=$isValid" +
+                ")"
         }
     }
 }
