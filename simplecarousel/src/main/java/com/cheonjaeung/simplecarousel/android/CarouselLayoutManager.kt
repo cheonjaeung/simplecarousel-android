@@ -53,6 +53,39 @@ class CarouselLayoutManager : RecyclerView.LayoutManager, RecyclerView.SmoothScr
             }
         }
 
+    /**
+     * Reverses layout order.
+     *
+     * If it is `true`, the first item is placed at the end of [RecyclerView] and the last item is
+     * placed at the start. When the [orientation] is horizontal, it depends on layout direction.
+     * For example, if the [RecyclerView] is RTL and [reverseLayout] is `true`, the [RecyclerView]
+     * is working like LTR.
+     */
+    var reverseLayout = false
+        set(value) {
+            assertNotInLayoutOrScroll(null)
+            if (value != field) {
+                field = value
+                requestLayout()
+            }
+        }
+
+    /**
+     * If `true`, the layout manager places items to the left/top direction.
+     *
+     * This is different to [reverseLayout]. [reverseLayout] is depends on layout direction. It means
+     * that even if [reverseLayout] is `true`, actual layout direction may not reversed.
+     * To clear layout reversing, it is used in internal layout functions.
+     */
+    private val layoutToLeftTop: Boolean
+        get() {
+            return if (orientation == HORIZONTAL) {
+                reverseLayout xor isRtl()
+            } else {
+                reverseLayout
+            }
+        }
+
     private var orientationHelper: OrientationHelper = OrientationHelper.createOrientationHelper(
         this,
         orientation
@@ -86,15 +119,19 @@ class CarouselLayoutManager : RecyclerView.LayoutManager, RecyclerView.SmoothScr
     constructor(@Orientation orientation: Int) : this(orientation, DEFAULT_CIRCULAR)
 
     /**
-     * Constructs a [CarouselLayoutManager] with specific circular mode.
+     * Constructs a [CarouselLayoutManager] with specific orientation and circular mode.
      */
     @Suppress("unused")
-    constructor(circular: Boolean) : this(DEFAULT_ORIENTATION, circular)
+    constructor(@Orientation orientation: Int, circular: Boolean) : this(orientation, circular, false)
 
+    /**
+     * Constructs a [CarouselLayoutManager] with specific orientation, circular mode and reverse layout option.
+     */
     @Suppress("unused")
-    constructor(@Orientation orientation: Int, circular: Boolean) : super() {
+    constructor(@Orientation orientation: Int, circular: Boolean, reverseLayout: Boolean) : super() {
         this.orientation = orientation
         this.circular = circular
+        this.reverseLayout = reverseLayout
         this.layoutHelper.setOrientationHelper(orientationHelper)
         this.layoutHelper.setCircular(circular)
         this.anchorInfo.setOrientationHelper(orientationHelper)
@@ -115,6 +152,7 @@ class CarouselLayoutManager : RecyclerView.LayoutManager, RecyclerView.SmoothScr
         val properties = getProperties(context, attrs, defStyleAttr, defStyleRes)
         this.orientation = properties.orientation
         this.circular = DEFAULT_CIRCULAR
+        this.reverseLayout = properties.reverseLayout
         this.layoutHelper.setOrientationHelper(orientationHelper)
         this.layoutHelper.setCircular(circular)
         this.anchorInfo.setOrientationHelper(orientationHelper)
@@ -137,13 +175,24 @@ class CarouselLayoutManager : RecyclerView.LayoutManager, RecyclerView.SmoothScr
             return SavedState(pendingSavedState)
         }
         val newSavedState = SavedState()
+        newSavedState.layoutToLeftTop = layoutToLeftTop
         if (childCount > 0) {
-            val view = getChildAtClosestToStart()
-            if (view != null) {
-                newSavedState.anchorPosition = getPosition(view)
-                val decoratedStart = orientationHelper.getDecoratedStart(view)
-                val startAfterPadding = orientationHelper.startAfterPadding
-                newSavedState.anchorOffset = decoratedStart - startAfterPadding
+            if (layoutToLeftTop) {
+                val view = getChildAtClosestToRightOrBottom()
+                if (view != null) {
+                    newSavedState.anchorPosition = getPosition(view)
+                    val decoratedEnd = orientationHelper.getDecoratedEnd(view)
+                    val endAfterPadding = orientationHelper.endAfterPadding
+                    newSavedState.anchorOffset = endAfterPadding - decoratedEnd
+                }
+            } else {
+                val view = getChildAtClosestToLeftOrTop()
+                if (view != null) {
+                    newSavedState.anchorPosition = getPosition(view)
+                    val decoratedStart = orientationHelper.getDecoratedStart(view)
+                    val startAfterPadding = orientationHelper.startAfterPadding
+                    newSavedState.anchorOffset = decoratedStart - startAfterPadding
+                }
             }
         } else {
             newSavedState.invalidateAnchor()
@@ -185,29 +234,44 @@ class CarouselLayoutManager : RecyclerView.LayoutManager, RecyclerView.SmoothScr
             anchorInfo.validate()
         }
 
-        layoutHelper.setShouldRecycle(false)
-
         // Moves current attached views to scrap for filling items.
         detachAndScrapAttachedViews(recycler)
 
         // Update layout helper by layout direction.
+        layoutHelper.setShouldRecycle(false)
         layoutHelper.updateLayoutDirectionFromLatestScrollDelta()
-        if (layoutHelper.layoutDirection == DIRECTION_LEFT_TOP) {
+        if (anchorInfo.layoutToLeftTop) {
             // Fill to main direction
-            layoutHelper.updateForFillingToLeftOrTop(anchorInfo.position, anchorInfo.coordinate)
+            layoutHelper.updateForFillingToLeftOrTop(
+                anchorInfo.position,
+                anchorInfo.coordinate,
+                layoutToLeftTop
+            )
             fill(recycler, state)
 
             // Fill to opposite direction if not filled
-            layoutHelper.updateForFillingToRightOrBottom(anchorInfo.position, anchorInfo.coordinate)
+            layoutHelper.updateForFillingToRightOrBottom(
+                anchorInfo.position,
+                anchorInfo.coordinate,
+                layoutToLeftTop
+            )
             layoutHelper.moveCurrentPosition(state)
             fill(recycler, state)
         } else {
             // Fill to main direction
-            layoutHelper.updateForFillingToRightOrBottom(anchorInfo.position, anchorInfo.coordinate)
+            layoutHelper.updateForFillingToRightOrBottom(
+                anchorInfo.position,
+                anchorInfo.coordinate,
+                layoutToLeftTop
+            )
             fill(recycler, state)
 
             // Fill to opposite direction if not filled
-            layoutHelper.updateForFillingToLeftOrTop(anchorInfo.position, anchorInfo.coordinate)
+            layoutHelper.updateForFillingToLeftOrTop(
+                anchorInfo.position,
+                anchorInfo.coordinate,
+                layoutToLeftTop
+            )
             layoutHelper.moveCurrentPosition(state)
             fill(recycler, state)
         }
@@ -218,7 +282,7 @@ class CarouselLayoutManager : RecyclerView.LayoutManager, RecyclerView.SmoothScr
      */
     private fun updateAnchorInfoForLayout(anchorInfo: AnchorInfo, state: RecyclerView.State) {
         // Try update anchor info from pending states.
-        if (anchorInfo.updateFromPending(pendingPosition, pendingSavedState, state)) {
+        if (anchorInfo.updateFromPending(pendingPosition, pendingSavedState, layoutToLeftTop, state)) {
             return
         } else {
             // Set useless pending position to no position cause it is invalid.
@@ -226,14 +290,14 @@ class CarouselLayoutManager : RecyclerView.LayoutManager, RecyclerView.SmoothScr
         }
 
         // Try update anchor info from existing children.
-        val anchorView = findAnchorView(state)
+        val anchorView = findAnchorView(state, layoutToLeftTop)
         if (anchorView != null) {
-            anchorInfo.updateFromView(anchorView, getPosition(anchorView))
+            anchorInfo.updateFromView(anchorView, getPosition(anchorView), layoutToLeftTop)
             return
         }
 
         // Update anchor info from nothing when previous steps are failed.
-        anchorInfo.updateFromNothing()
+        anchorInfo.updateFromNothing(layoutToLeftTop)
     }
 
     override fun onLayoutCompleted(state: RecyclerView.State?) {
@@ -324,11 +388,11 @@ class CarouselLayoutManager : RecyclerView.LayoutManager, RecyclerView.SmoothScr
         if (delta < 0) {
             val anchorView = getChildAtClosestToStart() ?: return 0
             val anchorPosition = getPosition(anchorView)
-            layoutHelper.updateForScrollingToLeftOrTop(delta, anchorView, anchorPosition, state)
+            layoutHelper.updateForScrollingToLeftOrTop(delta, anchorView, anchorPosition, layoutToLeftTop, state)
         } else {
             val anchorView = getChildAtClosestToEnd() ?: return 0
             val anchorPosition = getPosition(anchorView)
-            layoutHelper.updateForScrollingToRightOrBottom(delta, anchorView, anchorPosition, state)
+            layoutHelper.updateForScrollingToRightOrBottom(delta, anchorView, anchorPosition, layoutToLeftTop, state)
         }
         layoutHelper.setShouldRecycle(true)
 
@@ -383,8 +447,13 @@ class CarouselLayoutManager : RecyclerView.LayoutManager, RecyclerView.SmoothScr
             val right: Int
             val bottom: Int
             if (orientation == VERTICAL) {
-                left = paddingLeft
-                right = left + viewSizeInOther
+                if (isLtr()) {
+                    left = paddingLeft
+                    right = left + viewSizeInOther
+                } else {
+                    right = width - paddingRight
+                    left = right - viewSizeInOther
+                }
                 if (layoutHelper.layoutDirection == DIRECTION_LEFT_TOP) {
                     bottom = layoutHelper.offset
                     top = layoutHelper.offset - viewSize
@@ -432,6 +501,28 @@ class CarouselLayoutManager : RecyclerView.LayoutManager, RecyclerView.SmoothScr
         }
     }
 
+    private fun isLtr(): Boolean {
+        return layoutDirection == View.LAYOUT_DIRECTION_LTR
+    }
+
+    private fun isRtl(): Boolean {
+        return layoutDirection == View.LAYOUT_DIRECTION_RTL
+    }
+
+    /**
+     * Returns a child view at the closest to left or top of the layout.
+     */
+    private fun getChildAtClosestToLeftOrTop(): View? {
+        return getChildAt(if (layoutToLeftTop) childCount - 1 else 0)
+    }
+
+    /**
+     * Returns a child view at the closest to right or bottom of the layout.
+     */
+    private fun getChildAtClosestToRightOrBottom(): View? {
+        return getChildAt(if (layoutToLeftTop) 0 else childCount - 1)
+    }
+
     /**
      * Returns a child view at the closest to start of the layout.
      */
@@ -449,7 +540,7 @@ class CarouselLayoutManager : RecyclerView.LayoutManager, RecyclerView.SmoothScr
     /**
      * Returns a child view that can be used as an anchor view.
      */
-    private fun findAnchorView(state: RecyclerView.State): View? {
+    private fun findAnchorView(state: RecyclerView.State, layoutToLeftTop: Boolean): View? {
         if (childCount == 0) {
             return null
         }
@@ -480,10 +571,18 @@ class CarouselLayoutManager : RecyclerView.LayoutManager, RecyclerView.SmoothScr
                         val isViewOutOfBoundsAfterEnd = viewStart >= boundsEnd && viewEnd > boundsEnd
                         if (isViewOutOfBoundsBeforeStart || isViewOutOfBoundsAfterEnd) {
                             // If the view is out of bounds, it will be the anchor view candidate.
-                            if (isViewOutOfBoundsBeforeStart) {
-                                thirdCandidate = view
-                            } else if (secondCandidate == null) {
-                                secondCandidate = view
+                            if (layoutToLeftTop) {
+                                if (isViewOutOfBoundsAfterEnd) {
+                                    thirdCandidate = view
+                                } else if (secondCandidate == null) {
+                                    secondCandidate = view
+                                }
+                            } else {
+                                if (isViewOutOfBoundsBeforeStart) {
+                                    thirdCandidate = view
+                                } else if (secondCandidate == null) {
+                                    secondCandidate = view
+                                }
                             }
                         } else {
                             // If the view is not out of bounds, it will be the best anchor view.
@@ -598,6 +697,9 @@ class CarouselLayoutManager : RecyclerView.LayoutManager, RecyclerView.SmoothScr
         private const val NO_POSITION: Int = RecyclerView.NO_POSITION
         private const val INVALID_OFFSET: Int = Int.MIN_VALUE
         private const val SCROLLING_OFFSET_NAN: Int = Int.MIN_VALUE
+
+        private const val INT_TRUE: Int = 1
+        private const val INT_FALSE: Int = 0
     }
 
     /**
@@ -605,17 +707,20 @@ class CarouselLayoutManager : RecyclerView.LayoutManager, RecyclerView.SmoothScr
      */
     private data class SavedState(
         var anchorPosition: Int = NO_POSITION,
-        var anchorOffset: Int = INVALID_OFFSET
+        var anchorOffset: Int = INVALID_OFFSET,
+        var layoutToLeftTop: Boolean = false
     ) : Parcelable {
 
         constructor(parcel: Parcel) : this(
             anchorPosition = parcel.readInt(),
-            anchorOffset = parcel.readInt()
+            anchorOffset = parcel.readInt(),
+            layoutToLeftTop = parcel.readInt() == INT_TRUE
         )
 
         constructor(other: SavedState) : this(
             anchorPosition = other.anchorPosition,
-            anchorOffset = other.anchorOffset
+            anchorOffset = other.anchorOffset,
+            layoutToLeftTop = other.layoutToLeftTop
         )
 
         fun hasValidAnchor(): Boolean {
@@ -630,6 +735,8 @@ class CarouselLayoutManager : RecyclerView.LayoutManager, RecyclerView.SmoothScr
         override fun writeToParcel(parcel: Parcel, flags: Int) {
             parcel.writeInt(anchorPosition)
             parcel.writeInt(anchorOffset)
+            val intBoolean = if (layoutToLeftTop) INT_TRUE else INT_FALSE
+            parcel.writeInt(intBoolean)
         }
 
         override fun describeContents(): Int {
@@ -752,13 +859,14 @@ class CarouselLayoutManager : RecyclerView.LayoutManager, RecyclerView.SmoothScr
          *
          * @param position A position to start get item from adapter.
          * @param offset A pixel offset to start layout.
+         * @param layoutToLeftTop Is the layout direction to left or top.
          */
-        fun updateForFillingToLeftOrTop(position: Int, offset: Int) {
+        fun updateForFillingToLeftOrTop(position: Int, offset: Int, layoutToLeftTop: Boolean) {
             this.currentPosition = position
             this.offset = offset
             this.scrollingOffset = SCROLLING_OFFSET_NAN
             this.layoutDirection = DIRECTION_LEFT_TOP
-            this.itemDirection = DIRECTION_HEAD
+            this.itemDirection = if (layoutToLeftTop) DIRECTION_TAIL else DIRECTION_HEAD
             this.availableSpace = offset - orientationHelper.startAfterPadding
         }
 
@@ -767,13 +875,14 @@ class CarouselLayoutManager : RecyclerView.LayoutManager, RecyclerView.SmoothScr
          *
          * @param position A position to start get item from adapter.
          * @param offset A pixel offset to start layout.
+         * @param layoutToLeftTop Is the layout direction to left or top.
          */
-        fun updateForFillingToRightOrBottom(position: Int, offset: Int) {
+        fun updateForFillingToRightOrBottom(position: Int, offset: Int, layoutToLeftTop: Boolean) {
             this.currentPosition = position
             this.offset = offset
             this.scrollingOffset = SCROLLING_OFFSET_NAN
             this.layoutDirection = DIRECTION_RIGHT_BOTTOM
-            this.itemDirection = DIRECTION_TAIL
+            this.itemDirection = if (layoutToLeftTop) DIRECTION_HEAD else DIRECTION_TAIL
             this.availableSpace = orientationHelper.endAfterPadding - offset
         }
 
@@ -783,11 +892,18 @@ class CarouselLayoutManager : RecyclerView.LayoutManager, RecyclerView.SmoothScr
          * @param delta Amount of pixels to scroll.
          * @param view A view at the closest to start when scrolling triggered.
          * @param position A position of the [view].
+         * @param layoutToLeftTop Is the layout direction to left or top.
          */
-        fun updateForScrollingToLeftOrTop(delta: Int, view: View, position: Int, state: RecyclerView.State) {
+        fun updateForScrollingToLeftOrTop(
+            delta: Int,
+            view: View,
+            position: Int,
+            layoutToLeftTop: Boolean,
+            state: RecyclerView.State
+        ) {
             val absDelta = abs(delta)
             this.layoutDirection = DIRECTION_LEFT_TOP
-            this.itemDirection = DIRECTION_HEAD
+            this.itemDirection = if (layoutToLeftTop) DIRECTION_TAIL else DIRECTION_HEAD
             this.currentPosition = position + itemDirection
             validateCurrentPositionForCircular(state)
             this.offset = orientationHelper.getDecoratedStart(view)
@@ -801,11 +917,18 @@ class CarouselLayoutManager : RecyclerView.LayoutManager, RecyclerView.SmoothScr
          * @param delta Amount of pixels to scroll.
          * @param view A view at the closest to end when scrolling triggered.
          * @param position A position of the [view].
+         * @param layoutToLeftTop Is the layout direction to left or top.
          */
-        fun updateForScrollingToRightOrBottom(delta: Int, view: View, position: Int, state: RecyclerView.State) {
+        fun updateForScrollingToRightOrBottom(
+            delta: Int,
+            view: View,
+            position: Int,
+            layoutToLeftTop: Boolean,
+            state: RecyclerView.State
+        ) {
             val absDelta = abs(delta)
             this.layoutDirection = DIRECTION_RIGHT_BOTTOM
-            this.itemDirection = DIRECTION_TAIL
+            this.itemDirection = if (layoutToLeftTop) DIRECTION_HEAD else DIRECTION_TAIL
             this.currentPosition = position + itemDirection
             validateCurrentPositionForCircular(state)
             this.offset = orientationHelper.getDecoratedEnd(view)
@@ -900,6 +1023,12 @@ class CarouselLayoutManager : RecyclerView.LayoutManager, RecyclerView.SmoothScr
             private set
 
         /**
+         * Is the layout direction to left or top.
+         */
+        var layoutToLeftTop: Boolean = false
+            private set
+
+        /**
          * If `false`, the anchor view should be updated.
          */
         var isValid: Boolean = false
@@ -920,9 +1049,14 @@ class CarouselLayoutManager : RecyclerView.LayoutManager, RecyclerView.SmoothScr
          * For successful layout, it assumes the anchor view exists at the start of the view.
          * [coordinate] will be the start padding and the [position] will be the first item.
          */
-        fun updateFromNothing() {
+        fun updateFromNothing(layoutToLeftTop: Boolean) {
             this.position = 0
-            this.coordinate = orientationHelper.startAfterPadding
+            this.layoutToLeftTop = layoutToLeftTop
+            this.coordinate = if (layoutToLeftTop) {
+                orientationHelper.endAfterPadding
+            } else {
+                orientationHelper.startAfterPadding
+            }
         }
 
         /**
@@ -933,7 +1067,8 @@ class CarouselLayoutManager : RecyclerView.LayoutManager, RecyclerView.SmoothScr
         fun updateFromPending(
             pendingPosition: Int,
             pendingSavedState: SavedState?,
-            state: RecyclerView.State,
+            layoutToLeftTop: Boolean,
+            state: RecyclerView.State
         ): Boolean {
             if (pendingPosition == NO_POSITION) {
                 return false
@@ -944,13 +1079,22 @@ class CarouselLayoutManager : RecyclerView.LayoutManager, RecyclerView.SmoothScr
             }
 
             this.position = pendingPosition
+            if (pendingSavedState != null && pendingSavedState.hasValidAnchor()) {
+                this.layoutToLeftTop = pendingSavedState.layoutToLeftTop
+                this.coordinate = if (this.layoutToLeftTop) {
+                    orientationHelper.endAfterPadding - pendingSavedState.anchorOffset
+                } else {
+                    orientationHelper.startAfterPadding + pendingSavedState.anchorOffset
+                }
+                return true
+            }
 
-            this.coordinate = if (pendingSavedState != null && pendingSavedState.hasValidAnchor()) {
-                orientationHelper.startAfterPadding + pendingSavedState.anchorOffset
+            this.layoutToLeftTop = layoutToLeftTop
+            this.coordinate = if (layoutToLeftTop) {
+                orientationHelper.endAfterPadding
             } else {
                 orientationHelper.startAfterPadding
             }
-
             return true
         }
 
@@ -959,10 +1103,16 @@ class CarouselLayoutManager : RecyclerView.LayoutManager, RecyclerView.SmoothScr
          *
          * @param view The view to use as the anchor.
          * @param position The position of the view.
+         * @param layoutToLeftTop Is the layout direction to left or top.
          */
-        fun updateFromView(view: View, position: Int) {
+        fun updateFromView(view: View, position: Int, layoutToLeftTop: Boolean) {
             this.position = position
-            this.coordinate = orientationHelper.getDecoratedStart(view)
+            this.layoutToLeftTop = layoutToLeftTop
+            this.coordinate = if (this.layoutToLeftTop) {
+                orientationHelper.getDecoratedEnd(view) + orientationHelper.totalSpaceChange
+            } else {
+                orientationHelper.getDecoratedStart(view)
+            }
         }
 
         /**

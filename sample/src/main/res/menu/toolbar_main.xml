@@ -13,4 +13,22 @@
         android:title="@string/orientation_vertical"
         android:contentDescription="@string/orientation_vertical"
         app:showAsAction="never" />
+
+    <item
+        android:id="@+id/reverseLayout"
+        android:title="@string/reverse_layout"
+        android:contentDescription="@string/reverse_layout"
+        app:showAsAction="never" />
+
+    <item
+        android:id="@+id/layoutDirectionLtr"
+        android:title="@string/layout_direction_ltr"
+        android:contentDescription="@string/layout_direction_ltr"
+        app:showAsAction="never" />
+
+    <item
+        android:id="@+id/layoutDirectionRtl"
+        android:title="@string/layout_direction_rtl"
+        android:contentDescription="@string/layout_direction_rtl"
+        app:showAsAction="never" />
 </menu>

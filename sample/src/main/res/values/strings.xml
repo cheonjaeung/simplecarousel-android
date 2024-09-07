@@ -1,8 +1,11 @@
 <resources>
     <string name="app_name">SimpleCarousel Sample</string>
 
-    <string name="orientation">Orientation</string>
-    <string name="orientation_content_description">Orientation Menu</string>
     <string name="orientation_horizontal">Horizontal</string>
     <string name="orientation_vertical">Vertical</string>
+
+    <string name="reverse_layout">Reverse Layout</string>
+
+    <string name="layout_direction_ltr">LTR</string>
+    <string name="layout_direction_rtl">RTL</string>
 </resources>
