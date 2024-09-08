@@ -23,7 +23,7 @@ import kotlin.math.abs
 class CarouselLayoutManager : RecyclerView.LayoutManager, RecyclerView.SmoothScroller.ScrollVectorProvider {
 
     /**
-     * Enable circular mode which means that the first/last item will be connected to the first/last.
+     * Enable circular mode which means that the first/last item will be connected to the last/first.
      */
     var circular: Boolean = DEFAULT_CIRCULAR
         set(value) {
@@ -139,8 +139,7 @@ class CarouselLayoutManager : RecyclerView.LayoutManager, RecyclerView.SmoothScr
 
     /**
      * Constructs a [CarouselLayoutManager] from XML attribute.
-     * To set in XML layout, set this layout manager to [androidx.recyclerview.R.attr.layoutManager]
-     * in [RecyclerView].
+     * To set in XML layout, set this layout manager to `android:layoutManager` in the [RecyclerView].
      */
     @Suppress("unused")
     constructor(
