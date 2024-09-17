@@ -20,7 +20,7 @@ import kotlin.math.abs
  * The core logic is very similar to the LinearLayoutManager and some code are added to
  * make carousel behavior.
  */
-class CarouselLayoutManager : RecyclerView.LayoutManager, RecyclerView.SmoothScroller.ScrollVectorProvider {
+open class CarouselLayoutManager : RecyclerView.LayoutManager, RecyclerView.SmoothScroller.ScrollVectorProvider {
 
     /**
      * Enable circular mode which means that the first/last item will be connected to the last/first.
@@ -86,6 +86,7 @@ class CarouselLayoutManager : RecyclerView.LayoutManager, RecyclerView.SmoothScr
             }
         }
 
+    @Suppress("LeakingThis")
     private var orientationHelper: OrientationHelper = OrientationHelper.createOrientationHelper(
         this,
         orientation
@@ -534,7 +535,7 @@ class CarouselLayoutManager : RecyclerView.LayoutManager, RecyclerView.SmoothScr
      *
      * @return A pair of extra pixel sizes. Left/right for horizontal or top/bottom for vertical.
      */
-    private fun calculateExtraLayoutSpace(state: RecyclerView.State): Pair<Int, Int> {
+    protected open fun calculateExtraLayoutSpace(state: RecyclerView.State): Pair<Int, Int> {
         val extraSpace = if (state.hasTargetScrollPosition()) {
             orientationHelper.totalSpace
         } else {
