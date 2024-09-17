@@ -239,11 +239,15 @@ class CarouselLayoutManager : RecyclerView.LayoutManager, RecyclerView.SmoothScr
         // Update layout helper by layout direction.
         layoutHelper.setShouldRecycle(false)
         layoutHelper.updateLayoutDirectionFromLatestScrollDelta()
+        val extraSpaces = calculateExtraLayoutSpace(state)
+        val extraStart = extraSpaces.first.coerceAtLeast(0)
+        val extraEnd = extraSpaces.second.coerceAtLeast(0)
         if (anchorInfo.layoutToLeftTop) {
             // Fill to main direction
             layoutHelper.updateForFillingToLeftOrTop(
                 anchorInfo.position,
                 anchorInfo.coordinate,
+                extraStart,
                 layoutToLeftTop
             )
             fill(recycler, state)
@@ -252,6 +256,7 @@ class CarouselLayoutManager : RecyclerView.LayoutManager, RecyclerView.SmoothScr
             layoutHelper.updateForFillingToRightOrBottom(
                 anchorInfo.position,
                 anchorInfo.coordinate,
+                extraEnd,
                 layoutToLeftTop
             )
             layoutHelper.moveCurrentPosition(state)
@@ -261,6 +266,7 @@ class CarouselLayoutManager : RecyclerView.LayoutManager, RecyclerView.SmoothScr
             layoutHelper.updateForFillingToRightOrBottom(
                 anchorInfo.position,
                 anchorInfo.coordinate,
+                extraEnd,
                 layoutToLeftTop
             )
             fill(recycler, state)
@@ -269,6 +275,7 @@ class CarouselLayoutManager : RecyclerView.LayoutManager, RecyclerView.SmoothScr
             layoutHelper.updateForFillingToLeftOrTop(
                 anchorInfo.position,
                 anchorInfo.coordinate,
+                extraStart,
                 layoutToLeftTop
             )
             layoutHelper.moveCurrentPosition(state)
@@ -384,16 +391,33 @@ class CarouselLayoutManager : RecyclerView.LayoutManager, RecyclerView.SmoothScr
 
         // Update layout helper by scrolling direction.
         // If there is no anchor view, don't scroll.
+        val extraSpaces = calculateExtraLayoutSpace(state)
+        val extraStart = extraSpaces.first.coerceAtLeast(0)
+        val extraEnd = extraSpaces.second.coerceAtLeast(0)
+        layoutHelper.setShouldRecycle(true)
         if (delta < 0) {
             val anchorView = getChildAtClosestToStart() ?: return 0
             val anchorPosition = getPosition(anchorView)
-            layoutHelper.updateForScrollingToLeftOrTop(delta, anchorView, anchorPosition, layoutToLeftTop, state)
+            layoutHelper.updateForScrollingToLeftOrTop(
+                delta,
+                anchorView,
+                anchorPosition,
+                extraStart,
+                layoutToLeftTop,
+                state
+            )
         } else {
             val anchorView = getChildAtClosestToEnd() ?: return 0
             val anchorPosition = getPosition(anchorView)
-            layoutHelper.updateForScrollingToRightOrBottom(delta, anchorView, anchorPosition, layoutToLeftTop, state)
+            layoutHelper.updateForScrollingToRightOrBottom(
+                delta,
+                anchorView,
+                anchorPosition,
+                extraEnd,
+                layoutToLeftTop,
+                state
+            )
         }
-        layoutHelper.setShouldRecycle(true)
 
         // Fill items by scrolling amount.
         val filledSpace = fill(recycler, state)
@@ -427,7 +451,7 @@ class CarouselLayoutManager : RecyclerView.LayoutManager, RecyclerView.SmoothScr
             }
         }
 
-        var remainingSpace = layoutHelper.availableSpace
+        var remainingSpace = layoutHelper.availableSpace + layoutHelper.extraSpace
         while (remainingSpace > 0 && layoutHelper.hasNext(state)) {
             // Measure the current view size.
             val view = layoutHelper.next(recycler, state)
@@ -498,6 +522,28 @@ class CarouselLayoutManager : RecyclerView.LayoutManager, RecyclerView.SmoothScr
         if (pendingSavedState == null) {
             super.assertNotInLayoutOrScroll(message)
         }
+    }
+
+    /**
+     * Calculates the pixel amount of extra space that this layout manager should lay out.
+     *
+     * By default, this layout manager lays out only the visible size of [RecyclerView] without padding.
+     * But in some cases, layout manager should lays out items over the default size. For example, when
+     * a [RecyclerView] disables `clipToPadding`, [RecyclerView] will shows items covered by padding.
+     * In this case, the layout manager should lay out items at the padding area.
+     *
+     * @return A pair of extra pixel sizes. Left/right for horizontal or top/bottom for vertical.
+     */
+    private fun calculateExtraLayoutSpace(state: RecyclerView.State): Pair<Int, Int> {
+        val extraSpace = if (state.hasTargetScrollPosition()) {
+            orientationHelper.totalSpace
+        } else {
+            0
+        }
+        return Pair(
+            extraSpace + orientationHelper.startAfterPadding,
+            extraSpace + orientationHelper.endPadding
+        )
     }
 
     private fun isLtr(): Boolean {
@@ -631,7 +677,8 @@ class CarouselLayoutManager : RecyclerView.LayoutManager, RecyclerView.SmoothScr
         for (i in 0 until childCount) {
             val view = getChildAt(i)
             if (
-                orientationHelper.getDecoratedEnd(view) > limit
+                orientationHelper.getDecoratedEnd(view) > limit ||
+                orientationHelper.getTransformedEndWithDecoration(view) > limit
             ) {
                 recycleChildrenInRange(recycler, 0, i)
                 return
@@ -651,7 +698,8 @@ class CarouselLayoutManager : RecyclerView.LayoutManager, RecyclerView.SmoothScr
         for (i in (childCount - 1) downTo 0) {
             val view = getChildAt(i)
             if (
-                orientationHelper.getDecoratedStart(view) < limit
+                orientationHelper.getDecoratedStart(view) < limit ||
+                orientationHelper.getTransformedStartWithDecoration(view) < limit
             ) {
                 recycleChildrenInRange(recycler, childCount - 1, i)
                 return
@@ -790,6 +838,12 @@ class CarouselLayoutManager : RecyclerView.LayoutManager, RecyclerView.SmoothScr
             private set
 
         /**
+         * Pixel size that the layout manager should fill after filling [availableSpace].
+         */
+        var extraSpace: Int = 0
+            private set
+
+        /**
          * Direction where the layout manager should fill.
          */
         var layoutDirection: Int = DIRECTION_RIGHT_BOTTOM
@@ -858,15 +912,22 @@ class CarouselLayoutManager : RecyclerView.LayoutManager, RecyclerView.SmoothScr
          *
          * @param position A position to start get item from adapter.
          * @param offset A pixel offset to start layout.
+         * @param extraSpace A pixel size to fill additionally to left or top direction.
          * @param layoutToLeftTop Is the layout direction to left or top.
          */
-        fun updateForFillingToLeftOrTop(position: Int, offset: Int, layoutToLeftTop: Boolean) {
+        fun updateForFillingToLeftOrTop(
+            position: Int,
+            offset: Int,
+            extraSpace: Int,
+            layoutToLeftTop: Boolean
+        ) {
             this.currentPosition = position
             this.offset = offset
             this.scrollingOffset = SCROLLING_OFFSET_NAN
             this.layoutDirection = DIRECTION_LEFT_TOP
             this.itemDirection = if (layoutToLeftTop) DIRECTION_TAIL else DIRECTION_HEAD
             this.availableSpace = offset - orientationHelper.startAfterPadding
+            this.extraSpace = extraSpace
         }
 
         /**
@@ -874,15 +935,22 @@ class CarouselLayoutManager : RecyclerView.LayoutManager, RecyclerView.SmoothScr
          *
          * @param position A position to start get item from adapter.
          * @param offset A pixel offset to start layout.
+         * @param extraSpace A pixel size to fill additionally to right or bottom direction.
          * @param layoutToLeftTop Is the layout direction to left or top.
          */
-        fun updateForFillingToRightOrBottom(position: Int, offset: Int, layoutToLeftTop: Boolean) {
+        fun updateForFillingToRightOrBottom(
+            position: Int,
+            offset: Int,
+            extraSpace: Int,
+            layoutToLeftTop: Boolean
+        ) {
             this.currentPosition = position
             this.offset = offset
             this.scrollingOffset = SCROLLING_OFFSET_NAN
             this.layoutDirection = DIRECTION_RIGHT_BOTTOM
             this.itemDirection = if (layoutToLeftTop) DIRECTION_HEAD else DIRECTION_TAIL
             this.availableSpace = orientationHelper.endAfterPadding - offset
+            this.extraSpace = extraSpace
         }
 
         /**
@@ -891,12 +959,14 @@ class CarouselLayoutManager : RecyclerView.LayoutManager, RecyclerView.SmoothScr
          * @param delta Amount of pixels to scroll.
          * @param view A view at the closest to start when scrolling triggered.
          * @param position A position of the [view].
+         * @param extraSpace A pixel size to fill additionally to left or top direction.
          * @param layoutToLeftTop Is the layout direction to left or top.
          */
         fun updateForScrollingToLeftOrTop(
             delta: Int,
             view: View,
             position: Int,
+            extraSpace: Int,
             layoutToLeftTop: Boolean,
             state: RecyclerView.State
         ) {
@@ -908,6 +978,7 @@ class CarouselLayoutManager : RecyclerView.LayoutManager, RecyclerView.SmoothScr
             this.offset = orientationHelper.getDecoratedStart(view)
             this.scrollingOffset = orientationHelper.startAfterPadding - orientationHelper.getDecoratedStart(view)
             this.availableSpace = absDelta - this.scrollingOffset
+            this.extraSpace = extraSpace
         }
 
         /**
@@ -916,12 +987,14 @@ class CarouselLayoutManager : RecyclerView.LayoutManager, RecyclerView.SmoothScr
          * @param delta Amount of pixels to scroll.
          * @param view A view at the closest to end when scrolling triggered.
          * @param position A position of the [view].
+         * @param extraSpace A pixel size to fill additionally to right or bottom direction.
          * @param layoutToLeftTop Is the layout direction to left or top.
          */
         fun updateForScrollingToRightOrBottom(
             delta: Int,
             view: View,
             position: Int,
+            extraSpace: Int,
             layoutToLeftTop: Boolean,
             state: RecyclerView.State
         ) {
@@ -933,6 +1006,7 @@ class CarouselLayoutManager : RecyclerView.LayoutManager, RecyclerView.SmoothScr
             this.offset = orientationHelper.getDecoratedEnd(view)
             this.scrollingOffset = orientationHelper.getDecoratedEnd(view) - orientationHelper.endAfterPadding
             this.availableSpace = absDelta - this.scrollingOffset
+            this.extraSpace = extraSpace
         }
 
         /**
