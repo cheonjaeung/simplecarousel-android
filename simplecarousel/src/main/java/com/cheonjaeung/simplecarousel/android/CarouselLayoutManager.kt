@@ -426,8 +426,9 @@ open class CarouselLayoutManager : RecyclerView.LayoutManager, RecyclerView.Smoo
         }
 
         // Fill items by scrolling amount.
+        val scrollingOffsetBeforeFilling = layoutHelper.scrollingOffset
         val filledSpace = fill(recycler, state)
-        val consumed = layoutHelper.scrollingOffset + filledSpace
+        val consumed = scrollingOffsetBeforeFilling + filledSpace
         if (consumed < 0) {
             if (DEBUG) {
                 Log.d(TAG, "scrollBy: scrolled=0 (no more element)")
