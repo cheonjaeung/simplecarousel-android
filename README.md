@@ -7,6 +7,6 @@ The goals of this project is making simple and extensible carousel components.
 
 ## License
 
-Copyright 2024 Jaeung Cheon.
+Copyright 2024 Cheon Jaeung.
 
 SimpleCarousel is licensed under the Apache License 2.0. See [license](./LICENSE.txt) for more details.

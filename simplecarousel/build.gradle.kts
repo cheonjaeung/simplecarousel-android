@@ -50,7 +50,7 @@ mavenPublishing {
         developers {
             developer {
                 id.set("cheonjaeung")
-                name.set("Jaeung Cheon")
+                name.set("Cheon Jaeung")
                 email.set("cheonjaewoong@gmail.com")
             }
         }
