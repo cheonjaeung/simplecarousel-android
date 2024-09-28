@@ -5,6 +5,7 @@ import android.graphics.PointF
 import android.os.Parcel
 import android.os.Parcelable
 import android.util.AttributeSet
+import android.util.Log
 import android.view.View
 import androidx.recyclerview.widget.LinearSmoothScroller
 import androidx.recyclerview.widget.OrientationHelper
@@ -211,6 +212,10 @@ open class CarouselLayoutManager : RecyclerView.LayoutManager, RecyclerView.Smoo
     }
 
     override fun onLayoutChildren(recycler: RecyclerView.Recycler?, state: RecyclerView.State?) {
+        if (DEBUG) {
+            Log.d(TAG, "onLayoutChildren: isPreLayout=${state?.isPreLayout}")
+        }
+
         if (recycler == null || state == null) {
             return
         }
@@ -424,6 +429,9 @@ open class CarouselLayoutManager : RecyclerView.LayoutManager, RecyclerView.Smoo
         val filledSpace = fill(recycler, state)
         val consumed = layoutHelper.scrollingOffset + filledSpace
         if (consumed < 0) {
+            if (DEBUG) {
+                Log.d(TAG, "scrollBy: scrolled=0 (no more element)")
+            }
             return 0
         }
 
@@ -435,6 +443,9 @@ open class CarouselLayoutManager : RecyclerView.LayoutManager, RecyclerView.Smoo
         }
         orientationHelper.offsetChildren(-scrolled)
         layoutHelper.setLatestScrollDelta(scrolled)
+        if (DEBUG) {
+            Log.d(TAG, "scrollBy: scrolled=$scrolled, requested=$delta")
+        }
         return scrolled
     }
 
@@ -499,6 +510,15 @@ open class CarouselLayoutManager : RecyclerView.LayoutManager, RecyclerView.Smoo
 
             // Layout the view into the coordinate.
             layoutDecoratedWithMargins(view, left, top, right, bottom)
+            if (DEBUG) {
+                val p = view.layoutParams as RecyclerView.LayoutParams
+                Log.d(
+                    TAG,
+                    "child at ${getPosition(view)} laid out with " +
+                        "left=${left + p.leftMargin}, top=${top + p.topMargin}, " +
+                        "right=${right - p.rightMargin}, bottom=${bottom - p.bottomMargin}"
+                )
+            }
 
             // Update layout helper for the next view.
             layoutHelper.updateForFillingNext(viewSize)
@@ -727,9 +747,15 @@ open class CarouselLayoutManager : RecyclerView.LayoutManager, RecyclerView.Smoo
                 removeAndRecycleViewAt(i, recycler)
             }
         }
+        if (DEBUG) {
+            Log.d(TAG, "${abs(end - start)} children recycled")
+        }
     }
 
     companion object {
+        private const val TAG: String = "CarouselLayoutManager"
+        private const val DEBUG: Boolean = false
+
         const val HORIZONTAL: Int = RecyclerView.HORIZONTAL
         const val VERTICAL: Int = RecyclerView.VERTICAL
 
