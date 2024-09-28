@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.2.1
+
+_2024.09.28_
+
+### Fixed
+
+- Scrolling was stuck when `RecyclerView` had padding bigger than 0.
+
 ## 0.2.0
 
 _2024.09.17_
