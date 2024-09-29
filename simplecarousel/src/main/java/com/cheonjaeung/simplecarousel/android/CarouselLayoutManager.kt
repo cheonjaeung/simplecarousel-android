@@ -351,7 +351,7 @@ open class CarouselLayoutManager : RecyclerView.LayoutManager, RecyclerView.Smoo
         }
         val firstChild = getChildAt(0) ?: return null
         val firstChildPosition = getPosition(firstChild)
-        val scrollDirection = if (targetPosition < firstChildPosition) {
+        val scrollDirection = if ((targetPosition < firstChildPosition) != layoutToLeftTop) {
             DIRECTION_LEFT_TOP.toFloat()
         } else {
             DIRECTION_RIGHT_BOTTOM.toFloat()
