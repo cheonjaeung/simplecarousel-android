@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.2.2
+
+_2024.10.04_
+
+### Fixed
+
+- Recycling was not working when `RecyclerView` had padding bigger than 0.
+- `reverseLayout` was not applied to scroll direction in `CarouselLayoutManager.computeScrollVectorForPosition`.
+
 ## 0.2.1
 
 _2024.09.28_
