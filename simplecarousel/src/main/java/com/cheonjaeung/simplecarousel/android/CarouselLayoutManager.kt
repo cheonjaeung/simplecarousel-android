@@ -251,38 +251,42 @@ open class CarouselLayoutManager : RecyclerView.LayoutManager, RecyclerView.Smoo
         if (anchorInfo.layoutToLeftTop) {
             // Fill to main direction
             layoutHelper.updateForFillingToLeftOrTop(
-                anchorInfo.position,
-                anchorInfo.coordinate,
-                extraStart,
-                layoutToLeftTop
+                position = anchorInfo.position,
+                offset = anchorInfo.coordinate,
+                extraSpace = extraStart,
+                noRecycleSpace = extraEnd,
+                layoutToLeftTop = layoutToLeftTop
             )
             fill(recycler, state)
 
             // Fill to opposite direction if not filled
             layoutHelper.updateForFillingToRightOrBottom(
-                anchorInfo.position,
-                anchorInfo.coordinate,
-                extraEnd,
-                layoutToLeftTop
+                position = anchorInfo.position,
+                offset = anchorInfo.coordinate,
+                extraSpace = extraEnd,
+                noRecycleSpace = extraStart,
+                layoutToLeftTop = layoutToLeftTop
             )
             layoutHelper.moveCurrentPosition(state)
             fill(recycler, state)
         } else {
             // Fill to main direction
             layoutHelper.updateForFillingToRightOrBottom(
-                anchorInfo.position,
-                anchorInfo.coordinate,
-                extraEnd,
-                layoutToLeftTop
+                position = anchorInfo.position,
+                offset = anchorInfo.coordinate,
+                extraSpace = extraEnd,
+                noRecycleSpace = extraStart,
+                layoutToLeftTop = layoutToLeftTop
             )
             fill(recycler, state)
 
             // Fill to opposite direction if not filled
             layoutHelper.updateForFillingToLeftOrTop(
-                anchorInfo.position,
-                anchorInfo.coordinate,
-                extraStart,
-                layoutToLeftTop
+                position = anchorInfo.position,
+                offset = anchorInfo.coordinate,
+                extraSpace = extraStart,
+                noRecycleSpace = extraEnd,
+                layoutToLeftTop = layoutToLeftTop
             )
             layoutHelper.moveCurrentPosition(state)
             fill(recycler, state)
@@ -405,23 +409,25 @@ open class CarouselLayoutManager : RecyclerView.LayoutManager, RecyclerView.Smoo
             val anchorView = getChildAtClosestToStart() ?: return 0
             val anchorPosition = getPosition(anchorView)
             layoutHelper.updateForScrollingToLeftOrTop(
-                delta,
-                anchorView,
-                anchorPosition,
-                extraStart,
-                layoutToLeftTop,
-                state
+                delta = delta,
+                view = anchorView,
+                position = anchorPosition,
+                extraSpace = extraStart,
+                noRecycleSpace = extraEnd,
+                layoutToLeftTop = layoutToLeftTop,
+                state = state
             )
         } else {
             val anchorView = getChildAtClosestToEnd() ?: return 0
             val anchorPosition = getPosition(anchorView)
             layoutHelper.updateForScrollingToRightOrBottom(
-                delta,
-                anchorView,
-                anchorPosition,
-                extraEnd,
-                layoutToLeftTop,
-                state
+                delta = delta,
+                view = anchorView,
+                position = anchorPosition,
+                extraSpace = extraEnd,
+                noRecycleSpace = extraStart,
+                layoutToLeftTop = layoutToLeftTop,
+                state = state
             )
         }
 
@@ -679,22 +685,29 @@ open class CarouselLayoutManager : RecyclerView.LayoutManager, RecyclerView.Smoo
             return
         }
         val scrollingOffset = layoutHelper.scrollingOffset
+        val extraSpace = layoutHelper.extraSpace
+        val noRecycleSpace = layoutHelper.noRecycleSpace
         if (layoutHelper.layoutDirection == DIRECTION_RIGHT_BOTTOM) {
-            recycleChildrenFromLeftOrTop(recycler, scrollingOffset)
+            recycleChildrenFromLeftOrTop(recycler, scrollingOffset, extraSpace, noRecycleSpace)
         } else {
-            recycleChildrenFromRightOrBottom(recycler, scrollingOffset)
+            recycleChildrenFromRightOrBottom(recycler, scrollingOffset, extraSpace, noRecycleSpace)
         }
     }
 
     /**
-     * Recycles out of bounds children from left/top of view. It may called after scrolling toward the right/bottom.
+     * Recycles out of bounds children from left/top of view. It may called after scrolling toward
+     * the right/bottom.
      */
-    @Suppress("UnnecessaryVariable")
-    private fun recycleChildrenFromLeftOrTop(recycler: RecyclerView.Recycler, scrollingOffset: Int) {
-        if (scrollingOffset < 0) {
+    private fun recycleChildrenFromLeftOrTop(
+        recycler: RecyclerView.Recycler,
+        scrollingOffset: Int,
+        extraSpace: Int,
+        noRecycleSpace: Int
+    ) {
+        if (scrollingOffset + extraSpace < 0) {
             return
         }
-        val limit = scrollingOffset
+        val limit = scrollingOffset - noRecycleSpace
         val childCount = this.childCount
         for (i in 0 until childCount) {
             val view = getChildAt(i)
@@ -709,13 +722,19 @@ open class CarouselLayoutManager : RecyclerView.LayoutManager, RecyclerView.Smoo
     }
 
     /**
-     * Recycles out of bounds children from right/bottom of view. It may called after scrolling toward the left/top.
+     * Recycles out of bounds children from right/bottom of view. It may called after scrolling
+     * toward the left/top.
      */
-    private fun recycleChildrenFromRightOrBottom(recycler: RecyclerView.Recycler, scrollingOffset: Int) {
-        if (scrollingOffset < 0) {
+    private fun recycleChildrenFromRightOrBottom(
+        recycler: RecyclerView.Recycler,
+        scrollingOffset: Int,
+        extraSpace: Int,
+        noRecycleSpace: Int
+    ) {
+        if (scrollingOffset + extraSpace < 0) {
             return
         }
-        val limit = orientationHelper.end - scrollingOffset
+        val limit = orientationHelper.end - scrollingOffset + noRecycleSpace
         val childCount = this.childCount
         for (i in (childCount - 1) downTo 0) {
             val view = getChildAt(i)
@@ -872,6 +891,12 @@ open class CarouselLayoutManager : RecyclerView.LayoutManager, RecyclerView.Smoo
             private set
 
         /**
+         * Pixel size that should be excluded for recycling.
+         */
+        var noRecycleSpace: Int = 0
+            private set
+
+        /**
          * Direction where the layout manager should fill.
          */
         var layoutDirection: Int = DIRECTION_RIGHT_BOTTOM
@@ -941,12 +966,14 @@ open class CarouselLayoutManager : RecyclerView.LayoutManager, RecyclerView.Smoo
          * @param position A position to start get item from adapter.
          * @param offset A pixel offset to start layout.
          * @param extraSpace A pixel size to fill additionally to left or top direction.
+         * @param noRecycleSpace A pixel size that should be excluded for recycling.
          * @param layoutToLeftTop Is the layout direction to left or top.
          */
         fun updateForFillingToLeftOrTop(
             position: Int,
             offset: Int,
             extraSpace: Int,
+            noRecycleSpace: Int,
             layoutToLeftTop: Boolean
         ) {
             this.currentPosition = position
@@ -956,6 +983,7 @@ open class CarouselLayoutManager : RecyclerView.LayoutManager, RecyclerView.Smoo
             this.itemDirection = if (layoutToLeftTop) DIRECTION_TAIL else DIRECTION_HEAD
             this.availableSpace = offset - orientationHelper.startAfterPadding
             this.extraSpace = extraSpace
+            this.noRecycleSpace = noRecycleSpace
         }
 
         /**
@@ -964,12 +992,14 @@ open class CarouselLayoutManager : RecyclerView.LayoutManager, RecyclerView.Smoo
          * @param position A position to start get item from adapter.
          * @param offset A pixel offset to start layout.
          * @param extraSpace A pixel size to fill additionally to right or bottom direction.
+         * @param noRecycleSpace A pixel size that should be excluded for recycling.
          * @param layoutToLeftTop Is the layout direction to left or top.
          */
         fun updateForFillingToRightOrBottom(
             position: Int,
             offset: Int,
             extraSpace: Int,
+            noRecycleSpace: Int,
             layoutToLeftTop: Boolean
         ) {
             this.currentPosition = position
@@ -979,6 +1009,7 @@ open class CarouselLayoutManager : RecyclerView.LayoutManager, RecyclerView.Smoo
             this.itemDirection = if (layoutToLeftTop) DIRECTION_HEAD else DIRECTION_TAIL
             this.availableSpace = orientationHelper.endAfterPadding - offset
             this.extraSpace = extraSpace
+            this.noRecycleSpace = noRecycleSpace
         }
 
         /**
@@ -988,6 +1019,7 @@ open class CarouselLayoutManager : RecyclerView.LayoutManager, RecyclerView.Smoo
          * @param view A view at the closest to start when scrolling triggered.
          * @param position A position of the [view].
          * @param extraSpace A pixel size to fill additionally to left or top direction.
+         * @param noRecycleSpace A pixel size that should be excluded for recycling.
          * @param layoutToLeftTop Is the layout direction to left or top.
          */
         fun updateForScrollingToLeftOrTop(
@@ -995,6 +1027,7 @@ open class CarouselLayoutManager : RecyclerView.LayoutManager, RecyclerView.Smoo
             view: View,
             position: Int,
             extraSpace: Int,
+            noRecycleSpace: Int,
             layoutToLeftTop: Boolean,
             state: RecyclerView.State
         ) {
@@ -1007,6 +1040,7 @@ open class CarouselLayoutManager : RecyclerView.LayoutManager, RecyclerView.Smoo
             this.scrollingOffset = orientationHelper.startAfterPadding - orientationHelper.getDecoratedStart(view)
             this.availableSpace = absDelta - this.scrollingOffset
             this.extraSpace = extraSpace
+            this.noRecycleSpace = noRecycleSpace
         }
 
         /**
@@ -1016,6 +1050,7 @@ open class CarouselLayoutManager : RecyclerView.LayoutManager, RecyclerView.Smoo
          * @param view A view at the closest to end when scrolling triggered.
          * @param position A position of the [view].
          * @param extraSpace A pixel size to fill additionally to right or bottom direction.
+         * @param noRecycleSpace A pixel size that should be excluded for recycling.
          * @param layoutToLeftTop Is the layout direction to left or top.
          */
         fun updateForScrollingToRightOrBottom(
@@ -1023,6 +1058,7 @@ open class CarouselLayoutManager : RecyclerView.LayoutManager, RecyclerView.Smoo
             view: View,
             position: Int,
             extraSpace: Int,
+            noRecycleSpace: Int,
             layoutToLeftTop: Boolean,
             state: RecyclerView.State
         ) {
@@ -1035,6 +1071,7 @@ open class CarouselLayoutManager : RecyclerView.LayoutManager, RecyclerView.Smoo
             this.scrollingOffset = orientationHelper.getDecoratedEnd(view) - orientationHelper.endAfterPadding
             this.availableSpace = absDelta - this.scrollingOffset
             this.extraSpace = extraSpace
+            this.noRecycleSpace = noRecycleSpace
         }
 
         /**
@@ -1099,6 +1136,7 @@ open class CarouselLayoutManager : RecyclerView.LayoutManager, RecyclerView.Smoo
                 "currentPosition=$currentPosition, " +
                 "availableSpace=$availableSpace, " +
                 "extraSpace=$extraSpace, " +
+                "noRecycleSpace=$noRecycleSpace, " +
                 "layoutDirection=$layoutDirection, " +
                 "itemDirection=$itemDirection, " +
                 "latestScrollDelta=$latestScrollDelta, " +
