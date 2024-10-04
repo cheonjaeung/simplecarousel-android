@@ -1098,6 +1098,7 @@ open class CarouselLayoutManager : RecyclerView.LayoutManager, RecyclerView.Smoo
                 "scrollingOffset=$scrollingOffset, " +
                 "currentPosition=$currentPosition, " +
                 "availableSpace=$availableSpace, " +
+                "extraSpace=$extraSpace, " +
                 "layoutDirection=$layoutDirection, " +
                 "itemDirection=$itemDirection, " +
                 "latestScrollDelta=$latestScrollDelta, " +
@@ -1236,6 +1237,7 @@ open class CarouselLayoutManager : RecyclerView.LayoutManager, RecyclerView.Smoo
             return "AnchorInfo(" +
                 "position=$position, " +
                 "coordinate=$coordinate, " +
+                "layoutToLeftTop=$layoutToLeftTop, " +
                 "isValid=$isValid" +
                 ")"
         }
