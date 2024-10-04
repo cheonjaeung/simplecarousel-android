@@ -242,9 +242,6 @@ open class CarouselLayoutManager : RecyclerView.LayoutManager, RecyclerView.Smoo
         // Moves current attached views to scrap for filling items.
         detachAndScrapAttachedViews(recycler)
 
-        // Update layout helper by layout direction.
-        layoutHelper.setShouldRecycle(false)
-        layoutHelper.updateLayoutDirectionFromLatestScrollDelta()
         val extraSpaces = calculateExtraLayoutSpace(state)
         val extraStart = extraSpaces.first.coerceAtLeast(0)
         val extraEnd = extraSpaces.second.coerceAtLeast(0)
@@ -404,7 +401,6 @@ open class CarouselLayoutManager : RecyclerView.LayoutManager, RecyclerView.Smoo
         val extraSpaces = calculateExtraLayoutSpace(state)
         val extraStart = extraSpaces.first.coerceAtLeast(0)
         val extraEnd = extraSpaces.second.coerceAtLeast(0)
-        layoutHelper.setShouldRecycle(true)
         if (delta < 0) {
             val anchorView = getChildAtClosestToStart() ?: return 0
             val anchorPosition = getPosition(anchorView)
@@ -449,7 +445,6 @@ open class CarouselLayoutManager : RecyclerView.LayoutManager, RecyclerView.Smoo
             delta
         }
         orientationHelper.offsetChildren(-scrolled)
-        layoutHelper.setLatestScrollDelta(scrolled)
         if (DEBUG) {
             Log.d(TAG, "scrollBy: scrolled=$scrolled, requested=$delta")
         }
@@ -681,9 +676,6 @@ open class CarouselLayoutManager : RecyclerView.LayoutManager, RecyclerView.Smoo
      * Recycles out of bounds children by current state.
      */
     private fun recycleChildren(recycler: RecyclerView.Recycler) {
-        if (!layoutHelper.shouldRecycle) {
-            return
-        }
         val scrollingOffset = layoutHelper.scrollingOffset
         val extraSpace = layoutHelper.extraSpace
         val noRecycleSpace = layoutHelper.noRecycleSpace
@@ -854,12 +846,6 @@ open class CarouselLayoutManager : RecyclerView.LayoutManager, RecyclerView.Smoo
      */
     private class LayoutHelper {
         /**
-         * If `true`, layout manager should recycle out of bounds views after layout finished.
-         */
-        var shouldRecycle: Boolean = false
-            private set
-
-        /**
          * Pixel offset where layout should start.
          */
         var offset: Int = 0
@@ -909,12 +895,6 @@ open class CarouselLayoutManager : RecyclerView.LayoutManager, RecyclerView.Smoo
             private set
 
         /**
-         * The latest scroll delta.
-         */
-        var latestScrollDelta: Int = 0
-            private set
-
-        /**
          * Is the layout manager's circular mode enabled.
          */
         var circular: Boolean = true
@@ -926,10 +906,6 @@ open class CarouselLayoutManager : RecyclerView.LayoutManager, RecyclerView.Smoo
         lateinit var orientationHelper: OrientationHelper
             private set
 
-        fun setShouldRecycle(shouldRecycle: Boolean) {
-            this.shouldRecycle = shouldRecycle
-        }
-
         fun setCircular(circular: Boolean) {
             this.circular = circular
         }
@@ -938,26 +914,11 @@ open class CarouselLayoutManager : RecyclerView.LayoutManager, RecyclerView.Smoo
             this.orientationHelper = orientationHelper
         }
 
-        fun setLatestScrollDelta(latestScrollDelta: Int) {
-            this.latestScrollDelta = latestScrollDelta
-        }
-
         /**
          * Adjusts [scrollingOffset] by the [value].
          */
         fun adjustScrollOffset(value: Int) {
             this.scrollingOffset += value
-        }
-
-        /**
-         * Updates [layoutDirection] from [latestScrollDelta].
-         */
-        fun updateLayoutDirectionFromLatestScrollDelta() {
-            this.layoutDirection = if (this.latestScrollDelta >= 0) {
-                DIRECTION_RIGHT_BOTTOM
-            } else {
-                DIRECTION_LEFT_TOP
-            }
         }
 
         /**
@@ -1130,7 +1091,6 @@ open class CarouselLayoutManager : RecyclerView.LayoutManager, RecyclerView.Smoo
 
         override fun toString(): String {
             return "LayoutHelper(" +
-                "shouldRecycle=$shouldRecycle, " +
                 "offset=$offset, " +
                 "scrollingOffset=$scrollingOffset, " +
                 "currentPosition=$currentPosition, " +
@@ -1139,7 +1099,6 @@ open class CarouselLayoutManager : RecyclerView.LayoutManager, RecyclerView.Smoo
                 "noRecycleSpace=$noRecycleSpace, " +
                 "layoutDirection=$layoutDirection, " +
                 "itemDirection=$itemDirection, " +
-                "latestScrollDelta=$latestScrollDelta, " +
                 "circular=$circular" +
                 ")"
         }
