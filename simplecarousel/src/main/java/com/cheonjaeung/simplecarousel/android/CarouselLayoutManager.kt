@@ -48,6 +48,7 @@ open class CarouselLayoutManager : RecyclerView.LayoutManager, RecyclerView.Smoo
             if (value != field) {
                 field = value
                 orientationHelper = OrientationHelper.createOrientationHelper(this, value)
+                viewBoundsHelper = ViewBoundsHelper(createParentInfoCallback(value))
                 layoutHelper.setOrientationHelper(orientationHelper)
                 anchorInfo.setOrientationHelper(orientationHelper)
                 requestLayout()
@@ -92,6 +93,8 @@ open class CarouselLayoutManager : RecyclerView.LayoutManager, RecyclerView.Smoo
         this,
         orientation
     )
+
+    private var viewBoundsHelper: ViewBoundsHelper = ViewBoundsHelper(createParentInfoCallback(orientation))
 
     private val layoutHelper: LayoutHelper = LayoutHelper()
 
@@ -578,6 +581,82 @@ open class CarouselLayoutManager : RecyclerView.LayoutManager, RecyclerView.Smoo
     }
 
     /**
+     * Returns the adapter position of the first partially visible item.
+     *
+     * This function doesn't consider layout direction. Even if [reverseLayout] is `true`, it always find
+     * the visible view from left or top.
+     *
+     * If items have item decorations or margins, it will be considered in visibility calculation.
+     *
+     * It always calculate item visibility like [RecyclerView.mClipToPadding] is `true`. Views behind the
+     * padding are ignored.
+     *
+     * @return The adapter position of the first partially visible item or [RecyclerView.NO_POSITION] if there
+     * are not any partially visible items.
+     */
+    fun findFirstVisibleItemPosition(): Int {
+        val view = viewBoundsHelper.findPartiallyVisibleView(0, childCount)
+        return if (view != null) getPosition(view) else RecyclerView.NO_POSITION
+    }
+
+    /**
+     * Returns the adapter position of the first completely visible item.
+     *
+     * This function doesn't consider layout direction. Even if [reverseLayout] is `true`, it always find
+     * the visible view from left or top.
+     *
+     * If items have item decorations or margins, it will be considered in visibility calculation.
+     *
+     * It always calculate item visibility like [RecyclerView.mClipToPadding] is `true`. Views behind the
+     * padding are ignored.
+     *
+     * @return The adapter position of the first completely visible item or [RecyclerView.NO_POSITION] if there
+     * are not any completely visible items.
+     */
+    fun findFirstCompletelyVisibleItemPosition(): Int {
+        val view = viewBoundsHelper.findCompletelyVisibleView(0, childCount)
+        return if (view != null) getPosition(view) else RecyclerView.NO_POSITION
+    }
+
+    /**
+     * Returns the adapter position of the last partially visible item.
+     *
+     * This function doesn't consider layout direction. Even if [reverseLayout] is `true`, it always find
+     * the visible view from right or bottom.
+     *
+     * If items have item decorations or margins, it will be considered in visibility calculation.
+     *
+     * It always calculate item visibility like [RecyclerView.mClipToPadding] is `true`. Views behind the
+     * padding are ignored.
+     *
+     * @return The adapter position of the last partially visible item or [RecyclerView.NO_POSITION] if there
+     * are not any partially visible items.
+     */
+    fun findLastVisibleItemPosition(): Int {
+        val view = viewBoundsHelper.findPartiallyVisibleView(childCount - 1, -1)
+        return if (view != null) getPosition(view) else RecyclerView.NO_POSITION
+    }
+
+    /**
+     * Returns the adapter position of the last completely visible item.
+     *
+     * This function doesn't consider layout direction. Even if [reverseLayout] is `true`, it always find
+     * the visible view from right or bottom.
+     *
+     * If items have item decorations or margins, it will be considered in visibility calculation.
+     *
+     * It always calculate item visibility like [RecyclerView.mClipToPadding] is `true`. Views behind the
+     * padding are ignored.
+     *
+     * @return The adapter position of the last completely visible item or [RecyclerView.NO_POSITION] if there
+     * are not any completely visible items.
+     */
+    fun findLastCompletelyVisibleItemPosition(): Int {
+        val view = viewBoundsHelper.findCompletelyVisibleView(childCount - 1, -1)
+        return if (view != null) getPosition(view) else RecyclerView.NO_POSITION
+    }
+
+    /**
      * Returns a child view at the closest to left or top of the layout.
      */
     private fun getChildAtClosestToLeftOrTop(): View? {
@@ -761,6 +840,60 @@ open class CarouselLayoutManager : RecyclerView.LayoutManager, RecyclerView.Smoo
         }
         if (DEBUG) {
             Log.d(TAG, "${abs(end - start)} children recycled")
+        }
+    }
+
+    private fun createParentInfoCallback(orientation: Int): ViewBoundsHelper.ParentInfoCallback {
+        return when (orientation) {
+            HORIZONTAL -> object : ViewBoundsHelper.ParentInfoCallback {
+                override fun getChildAt(index: Int): View? {
+                    return this@CarouselLayoutManager.getChildAt(index)
+                }
+
+                override fun getParentStartAfterPadding(): Int {
+                    return this@CarouselLayoutManager.paddingLeft
+                }
+
+                override fun getParentEndBeforePadding(): Int {
+                    return this@CarouselLayoutManager.width - this@CarouselLayoutManager.paddingRight
+                }
+
+                override fun getChildStartWithinParent(child: View): Int {
+                    val params = child.layoutParams as RecyclerView.LayoutParams
+                    return this@CarouselLayoutManager.getDecoratedLeft(child) - params.leftMargin
+                }
+
+                override fun getChildEndWithinParent(child: View): Int {
+                    val params = child.layoutParams as RecyclerView.LayoutParams
+                    return this@CarouselLayoutManager.getDecoratedRight(child) + params.rightMargin
+                }
+            }
+
+            VERTICAL -> object : ViewBoundsHelper.ParentInfoCallback {
+                override fun getChildAt(index: Int): View? {
+                    return this@CarouselLayoutManager.getChildAt(index)
+                }
+
+                override fun getParentStartAfterPadding(): Int {
+                    return this@CarouselLayoutManager.paddingTop
+                }
+
+                override fun getParentEndBeforePadding(): Int {
+                    return this@CarouselLayoutManager.height - this@CarouselLayoutManager.paddingBottom
+                }
+
+                override fun getChildStartWithinParent(child: View): Int {
+                    val params = child.layoutParams as RecyclerView.LayoutParams
+                    return this@CarouselLayoutManager.getDecoratedTop(child) - params.topMargin
+                }
+
+                override fun getChildEndWithinParent(child: View): Int {
+                    val params = child.layoutParams as RecyclerView.LayoutParams
+                    return this@CarouselLayoutManager.getDecoratedBottom(child) + params.bottomMargin
+                }
+            }
+
+            else -> throw IllegalArgumentException("Invalid orientation: $orientation")
         }
     }
 
