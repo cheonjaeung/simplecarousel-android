@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.3.0
+
+_2024.10.06_
+
+### Changed
+
+- `CarouselSnapHelper` is added to support snapping of `CarouselLayoutManager`.
+- `CarouselLayoutManager` now has functions to get visible item (`findFirstVisibleItemPosition`, `findFirstCompletelyVisibleItemPosition`, `findLastVisibleItemPosition`, `findLastCompletelyVisibleItemPosition`).
+- `ViewBoundsHelper` is added to check visibility of child view within parent view.
+
 ## 0.2.2
 
 _2024.10.04_
