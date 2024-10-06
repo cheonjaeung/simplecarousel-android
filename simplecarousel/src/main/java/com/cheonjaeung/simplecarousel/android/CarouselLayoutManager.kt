@@ -15,11 +15,6 @@ import kotlin.math.abs
 
 /**
  * A [RecyclerView.LayoutManager] that makes [RecyclerView] behave like a carousel.
- *
- * The implementation of this layout manager is highly inspired by
- * [LinearLayoutManager][androidx.recyclerview.widget.LinearLayoutManager].
- * The core logic is very similar to the LinearLayoutManager and some code are added to
- * make carousel behavior.
  */
 open class CarouselLayoutManager : RecyclerView.LayoutManager, RecyclerView.SmoothScroller.ScrollVectorProvider {
 
