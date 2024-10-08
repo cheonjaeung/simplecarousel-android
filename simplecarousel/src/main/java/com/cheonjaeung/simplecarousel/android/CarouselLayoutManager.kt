@@ -344,21 +344,51 @@ open class CarouselLayoutManager : RecyclerView.LayoutManager, RecyclerView.Smoo
         startSmoothScroll(smoothScroller)
     }
 
+    /**
+     * Calculates the vector pointing to the direction where the [targetPosition] can be found
+     * in the shortest way.
+     *
+     * @param targetPosition The target adapter position.
+     */
     override fun computeScrollVectorForPosition(targetPosition: Int): PointF? {
         if (childCount == 0) {
             return null
         }
+
         val firstChild = getChildAt(0) ?: return null
         val firstChildPosition = getPosition(firstChild)
-        val scrollDirection = if ((targetPosition < firstChildPosition) != layoutToLeftTop) {
-            DIRECTION_LEFT_TOP.toFloat()
+
+        if (circular) {
+            val steps: Int
+            val stepsInOther: Int
+            if (targetPosition < firstChildPosition) {
+                steps = firstChildPosition - targetPosition
+                stepsInOther = (itemCount - firstChildPosition) + targetPosition
+            } else {
+                steps = firstChildPosition + (itemCount - targetPosition)
+                stepsInOther = targetPosition - firstChildPosition
+            }
+            val scrollDirection = if ((steps < stepsInOther) != layoutToLeftTop) {
+                DIRECTION_LEFT_TOP.toFloat()
+            } else {
+                DIRECTION_RIGHT_BOTTOM.toFloat()
+            }
+            return if (orientation == HORIZONTAL) {
+                PointF(scrollDirection, 0f)
+            } else {
+                PointF(0f, scrollDirection)
+            }
         } else {
-            DIRECTION_RIGHT_BOTTOM.toFloat()
-        }
-        return if (orientation == HORIZONTAL) {
-            PointF(scrollDirection, 0f)
-        } else {
-            PointF(0f, scrollDirection)
+            val scrollDirection = if ((targetPosition < firstChildPosition) != layoutToLeftTop) {
+                DIRECTION_LEFT_TOP.toFloat()
+            } else {
+                DIRECTION_RIGHT_BOTTOM.toFloat()
+            }
+            return if (orientation == HORIZONTAL) {
+                PointF(scrollDirection, 0f)
+            } else {
+                PointF(0f, scrollDirection)
+            }
         }
     }
 
