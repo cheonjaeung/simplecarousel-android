@@ -351,6 +351,18 @@ open class CarouselLayoutManager : RecyclerView.LayoutManager, RecyclerView.Smoo
      * @param targetPosition The target adapter position.
      */
     override fun computeScrollVectorForPosition(targetPosition: Int): PointF? {
+        return computeScrollVectorForPosition(targetPosition, circular)
+    }
+
+    /**
+     * Calculates the vector pointing to the direction where the [targetPosition] can be found
+     * in the shortest way.
+     *
+     * @param targetPosition The target adapter position.
+     * @param assumedCircular The assumed circular mode. It calculates vector with given [assumedCircular]
+     * that is independent of [CarouselLayoutManager.circular] condition.
+     */
+    fun computeScrollVectorForPosition(targetPosition: Int, assumedCircular: Boolean): PointF? {
         if (childCount == 0) {
             return null
         }
@@ -358,17 +370,17 @@ open class CarouselLayoutManager : RecyclerView.LayoutManager, RecyclerView.Smoo
         val firstChild = getChildAt(0) ?: return null
         val firstChildPosition = getPosition(firstChild)
 
-        if (circular) {
-            val steps: Int
-            val stepsInOther: Int
+        if (assumedCircular) {
+            val stepsToLeftTop: Int
+            val stepsToRightBottom: Int
             if (targetPosition < firstChildPosition) {
-                steps = firstChildPosition - targetPosition
-                stepsInOther = (itemCount - firstChildPosition) + targetPosition
+                stepsToLeftTop = firstChildPosition - targetPosition
+                stepsToRightBottom = (itemCount - firstChildPosition) + targetPosition
             } else {
-                steps = firstChildPosition + (itemCount - targetPosition)
-                stepsInOther = targetPosition - firstChildPosition
+                stepsToLeftTop = (itemCount - targetPosition) + firstChildPosition
+                stepsToRightBottom = targetPosition - firstChildPosition
             }
-            val scrollDirection = if ((steps < stepsInOther) != layoutToLeftTop) {
+            val scrollDirection = if ((stepsToLeftTop < stepsToRightBottom) != layoutToLeftTop) {
                 DIRECTION_LEFT_TOP.toFloat()
             } else {
                 DIRECTION_RIGHT_BOTTOM.toFloat()
