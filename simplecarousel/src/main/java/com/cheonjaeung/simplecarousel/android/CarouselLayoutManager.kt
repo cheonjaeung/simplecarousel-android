@@ -499,7 +499,7 @@ open class CarouselLayoutManager : RecyclerView.LayoutManager, RecyclerView.Smoo
     private fun fill(recycler: RecyclerView.Recycler, state: RecyclerView.State): Int {
         val fillStart = layoutHelper.availableSpace
 
-        if (layoutHelper.scrollingOffset != SCROLLING_OFFSET_NAN) {
+        if (layoutHelper.scrollingOffset != INVALID_OFFSET) {
             if (layoutHelper.availableSpace < 0) {
                 layoutHelper.adjustScrollOffset(layoutHelper.availableSpace)
             }
@@ -567,7 +567,7 @@ open class CarouselLayoutManager : RecyclerView.LayoutManager, RecyclerView.Smoo
             remainingSpace -= viewSize
 
             // Update scrolling offset if it triggered by scrolling.
-            if (layoutHelper.scrollingOffset != SCROLLING_OFFSET_NAN) {
+            if (layoutHelper.scrollingOffset != INVALID_OFFSET) {
                 if (layoutHelper.availableSpace < 0) {
                     layoutHelper.adjustScrollOffset(layoutHelper.availableSpace)
                 }
@@ -952,7 +952,6 @@ open class CarouselLayoutManager : RecyclerView.LayoutManager, RecyclerView.Smoo
 
         private const val NO_POSITION: Int = RecyclerView.NO_POSITION
         private const val INVALID_OFFSET: Int = Int.MIN_VALUE
-        private const val SCROLLING_OFFSET_NAN: Int = Int.MIN_VALUE
 
         private const val INT_TRUE: Int = 1
         private const val INT_FALSE: Int = 0
@@ -1025,7 +1024,7 @@ open class CarouselLayoutManager : RecyclerView.LayoutManager, RecyclerView.Smoo
          * The amount of pixel offset this manager can scroll without creating new views.
          * It used only when scrolling.
          */
-        var scrollingOffset: Int = SCROLLING_OFFSET_NAN
+        var scrollingOffset: Int = INVALID_OFFSET
             private set
 
         /**
@@ -1061,7 +1060,7 @@ open class CarouselLayoutManager : RecyclerView.LayoutManager, RecyclerView.Smoo
         /**
          * Direction where the layout manager traverse adapter items.
          */
-        var itemDirection: Int = DIRECTION_RIGHT_BOTTOM
+        var itemDirection: Int = DIRECTION_TAIL
             private set
 
         /**
@@ -1109,7 +1108,7 @@ open class CarouselLayoutManager : RecyclerView.LayoutManager, RecyclerView.Smoo
         ) {
             this.currentPosition = position
             this.offset = offset
-            this.scrollingOffset = SCROLLING_OFFSET_NAN
+            this.scrollingOffset = INVALID_OFFSET
             this.layoutDirection = DIRECTION_LEFT_TOP
             this.itemDirection = if (layoutToLeftTop) DIRECTION_TAIL else DIRECTION_HEAD
             this.availableSpace = offset - orientationHelper.startAfterPadding
@@ -1135,7 +1134,7 @@ open class CarouselLayoutManager : RecyclerView.LayoutManager, RecyclerView.Smoo
         ) {
             this.currentPosition = position
             this.offset = offset
-            this.scrollingOffset = SCROLLING_OFFSET_NAN
+            this.scrollingOffset = INVALID_OFFSET
             this.layoutDirection = DIRECTION_RIGHT_BOTTOM
             this.itemDirection = if (layoutToLeftTop) DIRECTION_HEAD else DIRECTION_TAIL
             this.availableSpace = orientationHelper.endAfterPadding - offset
