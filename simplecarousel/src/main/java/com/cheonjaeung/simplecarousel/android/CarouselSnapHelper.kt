@@ -2,7 +2,6 @@ package com.cheonjaeung.simplecarousel.android
 
 import android.graphics.PointF
 import android.util.DisplayMetrics
-import android.util.Log
 import android.view.View
 import androidx.recyclerview.widget.LinearSmoothScroller
 import androidx.recyclerview.widget.LinearSnapHelper
@@ -54,14 +53,6 @@ class CarouselSnapHelper : LinearSnapHelper() {
         velocityX: Int,
         velocityY: Int
     ): Boolean {
-        if (layoutManager !is CarouselLayoutManager) {
-            Log.w(
-                TAG,
-                "LayoutManager should be ${CarouselLayoutManager::class.java.canonicalName} to use $TAG"
-            )
-            return false
-        }
-
         val smoothScroller = createScroller(layoutManager)
         if (smoothScroller == null) {
             return false
@@ -78,14 +69,6 @@ class CarouselSnapHelper : LinearSnapHelper() {
     }
 
     override fun createScroller(layoutManager: RecyclerView.LayoutManager): RecyclerView.SmoothScroller? {
-        if (layoutManager !is CarouselLayoutManager) {
-            Log.w(
-                TAG,
-                "LayoutManager should be ${CarouselLayoutManager::class.java.canonicalName} to use $TAG"
-            )
-            return null
-        }
-
         val context = recyclerView?.context
         if (context == null) {
             return null
@@ -128,12 +111,14 @@ class CarouselSnapHelper : LinearSnapHelper() {
         velocityX: Int,
         velocityY: Int
     ): Int {
-        if (layoutManager !is CarouselLayoutManager) {
-            Log.w(
-                TAG,
-                "LayoutManager should be ${CarouselLayoutManager::class.java.canonicalName} to use $TAG"
-            )
+        if (layoutManager !is RecyclerView.SmoothScroller.ScrollVectorProvider) {
             return RecyclerView.NO_POSITION
+        }
+
+        val circular = if (layoutManager is CarouselLayoutManager) {
+            layoutManager.circular
+        } else {
+            false
         }
 
         val itemCount = layoutManager.itemCount
@@ -151,7 +136,11 @@ class CarouselSnapHelper : LinearSnapHelper() {
             return RecyclerView.NO_POSITION
         }
 
-        val vector = layoutManager.computeScrollVectorForPosition(itemCount - 1, false)
+        val vector = if (layoutManager is CarouselLayoutManager) {
+            layoutManager.computeScrollVectorForPosition(itemCount - 1, false)
+        } else {
+            layoutManager.computeScrollVectorForPosition(itemCount - 1)
+        }
         if (vector == null) {
             return RecyclerView.NO_POSITION
         }
@@ -161,7 +150,7 @@ class CarouselSnapHelper : LinearSnapHelper() {
             return RecyclerView.NO_POSITION
         }
 
-        if (layoutManager.circular) {
+        if (circular) {
             val firstChild = layoutManager.getChildAt(0)
             if (firstChild == null) {
                 return RecyclerView.NO_POSITION
@@ -328,6 +317,7 @@ class CarouselSnapHelper : LinearSnapHelper() {
     }
 
     companion object {
+        @Suppress("unused")
         private const val TAG: String = "CarouselSnapHelper"
 
         private const val DIRECTION_LEFT_TOP: Int = -1
