@@ -7,7 +7,6 @@ import android.os.Parcelable
 import android.util.AttributeSet
 import android.util.Log
 import android.view.View
-import androidx.recyclerview.widget.LinearSmoothScroller
 import androidx.recyclerview.widget.OrientationHelper
 import androidx.recyclerview.widget.RecyclerView
 import androidx.recyclerview.widget.RecyclerView.Orientation
@@ -339,7 +338,7 @@ open class CarouselLayoutManager : RecyclerView.LayoutManager, RecyclerView.Smoo
         state: RecyclerView.State?,
         position: Int
     ) {
-        val smoothScroller = LinearSmoothScroller(recyclerView?.context)
+        val smoothScroller = CarouselSmoothScroller(recyclerView?.context, this)
         smoothScroller.targetPosition = position
         startSmoothScroll(smoothScroller)
     }
