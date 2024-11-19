@@ -2,6 +2,7 @@ package com.cheonjaeung.simplecarousel.android
 
 import android.graphics.PointF
 import android.util.DisplayMetrics
+import android.util.Log
 import android.view.View
 import androidx.recyclerview.widget.LinearSnapHelper
 import androidx.recyclerview.widget.OrientationHelper
@@ -54,6 +55,10 @@ class CarouselSnapHelper : LinearSnapHelper() {
     ): Boolean {
         val smoothScroller = createScroller(layoutManager)
         if (smoothScroller == null || smoothScroller !is CarouselSmoothScroller) {
+            Log.w(
+                TAG,
+                "createScroller must return ${CarouselSmoothScroller::class.java.canonicalName} implementation"
+            )
             return false
         }
 
@@ -107,7 +112,7 @@ class CarouselSnapHelper : LinearSnapHelper() {
             }
 
             override fun calculateSpeedPerPixel(displayMetrics: DisplayMetrics): Float {
-                return MILLISECONDS_PER_INCH /displayMetrics.densityDpi
+                return MILLISECONDS_PER_INCH / displayMetrics.densityDpi
             }
         }
     }
@@ -117,7 +122,11 @@ class CarouselSnapHelper : LinearSnapHelper() {
         velocityX: Int,
         velocityY: Int
     ): Int {
-        if (layoutManager !is RecyclerView.SmoothScroller.ScrollVectorProvider) {
+        if (layoutManager !is CarouselSmoothScroller.ScrollVectorProvider) {
+            Log.w(
+                TAG,
+                "LayoutManager must implement ${CarouselSmoothScroller.ScrollVectorProvider::class.java.canonicalName}"
+            )
             return RecyclerView.NO_POSITION
         }
 

@@ -2,6 +2,7 @@ package com.cheonjaeung.simplecarousel.android
 
 import android.content.Context
 import android.graphics.PointF
+import android.util.Log
 import android.view.View
 import androidx.recyclerview.widget.LinearSmoothScroller
 import androidx.recyclerview.widget.RecyclerView
@@ -85,11 +86,13 @@ open class CarouselSmoothScroller(
 
     override fun updateActionForInterimTarget(action: Action?) {
         val layoutManager = layoutManager
-        val vector = if (layoutManager is CarouselLayoutManager) {
-            layoutManager.computeScrollVectorForPosition(initialTargetPosition, false)
-        } else {
-            computeScrollVectorForPosition(targetPosition)
+        if (layoutManager !is ScrollVectorProvider) {
+            stop()
+            Log.w(TAG, "LayoutManager must implement ${ScrollVectorProvider::class.java.canonicalName}")
+            return
         }
+
+        val vector = layoutManager.computeScrollVectorForPosition(initialTargetPosition, false)
         if (vector == null || (vector.x == 0f && vector.y == 0f)) {
             action?.jumpTo(targetPosition)
             stop()
@@ -124,6 +127,8 @@ open class CarouselSmoothScroller(
     }
 
     companion object {
+        private const val TAG = "CarouselSmoothScroller"
+
         /**
          * A special target position to make this scroller keep scrolling.
          *
