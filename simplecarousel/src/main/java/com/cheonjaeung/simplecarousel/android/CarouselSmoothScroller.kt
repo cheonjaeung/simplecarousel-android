@@ -1,6 +1,7 @@
 package com.cheonjaeung.simplecarousel.android
 
 import android.content.Context
+import android.graphics.PointF
 import android.view.View
 import androidx.recyclerview.widget.LinearSmoothScroller
 import androidx.recyclerview.widget.RecyclerView
@@ -8,8 +9,8 @@ import androidx.recyclerview.widget.RecyclerView
 /**
  * A [RecyclerView.SmoothScroller] implementation for [CarouselLayoutManager].
  *
- * The [RecyclerView.LayoutManager] should be [CarouselLayoutManager] to get circular option and compute
- * scroll vector.
+ * The [RecyclerView.LayoutManager] must implement [CarouselSmoothScroller.ScrollVectorProvider] to
+ * scroll to the target position with circular mode.
  */
 open class CarouselSmoothScroller(
     context: Context?,
@@ -133,5 +134,29 @@ open class CarouselSmoothScroller(
 
         private const val TARGET_SEEK_SCROLL_DISTANCE_PX = 10000
         private const val TARGET_SEEK_EXTRA_SCROLL_RATIO = 1.2f
+    }
+
+    /**
+     * An interface for a custom [RecyclerView.LayoutManager] to compute scroll vector to target position,
+     * taking circular mode into consideration.
+     */
+    interface ScrollVectorProvider : RecyclerView.SmoothScroller.ScrollVectorProvider {
+        /**
+         * Calculates the vector pointing to the direction where the [targetPosition] can be found
+         * in the shortest way.
+         *
+         * @param targetPosition The target adapter position.
+         */
+        override fun computeScrollVectorForPosition(targetPosition: Int): PointF?
+
+        /**
+         * Calculates the vector pointing to the direction where the [targetPosition] can be found
+         * in the shortest way.
+         *
+         * @param targetPosition The target adapter position.
+         * @param assumedCircular The assumed circular mode. It calculates vector with given [assumedCircular]
+         * that is independent of [CarouselLayoutManager.circular] condition.
+         */
+        fun computeScrollVectorForPosition(targetPosition: Int, assumedCircular: Boolean): PointF?
     }
 }
