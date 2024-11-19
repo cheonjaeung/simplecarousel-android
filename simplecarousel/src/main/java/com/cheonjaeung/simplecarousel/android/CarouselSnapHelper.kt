@@ -3,7 +3,6 @@ package com.cheonjaeung.simplecarousel.android
 import android.graphics.PointF
 import android.util.DisplayMetrics
 import android.view.View
-import androidx.recyclerview.widget.LinearSmoothScroller
 import androidx.recyclerview.widget.LinearSnapHelper
 import androidx.recyclerview.widget.OrientationHelper
 import androidx.recyclerview.widget.RecyclerView
@@ -54,18 +53,25 @@ class CarouselSnapHelper : LinearSnapHelper() {
         velocityY: Int
     ): Boolean {
         val smoothScroller = createScroller(layoutManager)
-        if (smoothScroller == null) {
+        if (smoothScroller == null || smoothScroller !is CarouselSmoothScroller) {
             return false
         }
 
         val targetPosition = findTargetSnapPosition(layoutManager, velocityX, velocityY)
-        if (targetPosition == RecyclerView.NO_POSITION) {
-            return false
-        }
 
-        smoothScroller.targetPosition = targetPosition
-        layoutManager.startSmoothScroll(smoothScroller)
-        return true
+        if (layoutManager is CarouselLayoutManager) {
+            smoothScroller.targetPosition = targetPosition
+            layoutManager.startSmoothScroll(smoothScroller)
+            return true
+        } else {
+            if (targetPosition == RecyclerView.NO_POSITION) {
+                return false
+            }
+
+            smoothScroller.targetPosition = targetPosition
+            layoutManager.startSmoothScroll(smoothScroller)
+            return true
+        }
     }
 
     override fun createScroller(layoutManager: RecyclerView.LayoutManager): RecyclerView.SmoothScroller? {
@@ -74,7 +80,7 @@ class CarouselSnapHelper : LinearSnapHelper() {
             return null
         }
 
-        return object : LinearSmoothScroller(recyclerView?.context) {
+        return object : CarouselSmoothScroller(context, layoutManager) {
             override fun onTargetFound(targetView: View, state: RecyclerView.State, action: Action) {
                 val recyclerView = recyclerView
                 if (recyclerView == null) {
@@ -145,42 +151,13 @@ class CarouselSnapHelper : LinearSnapHelper() {
             return RecyclerView.NO_POSITION
         }
 
-        var nextPositionSteps = calculateNextPositionSteps(layoutManager, vector, velocityX, velocityY)
+        val nextPositionSteps = calculateNextPositionSteps(layoutManager, vector, velocityX, velocityY)
         if (nextPositionSteps == 0) {
             return RecyclerView.NO_POSITION
         }
 
         if (circular) {
-            val firstChild = layoutManager.getChildAt(0)
-            if (firstChild == null) {
-                return RecyclerView.NO_POSITION
-            }
-
-            val firstChildPosition = layoutManager.getPosition(firstChild)
-            if (firstChildPosition == RecyclerView.NO_POSITION) {
-                return RecyclerView.NO_POSITION
-            }
-
-            val currentAndFirstVisibleDiff = if (firstChildPosition < currentPosition) {
-                currentPosition - firstChildPosition
-            } else {
-                (itemCount - firstChildPosition) + currentPosition
-            }
-
-            val halfItemCount = itemCount / 2
-            if (nextPositionSteps <= -halfItemCount) {
-                nextPositionSteps = -halfItemCount + 1
-            }
-            if (nextPositionSteps >= halfItemCount) {
-                nextPositionSteps = halfItemCount - 1
-            }
-
-            val targetPosition = currentPosition + nextPositionSteps - currentAndFirstVisibleDiff
-            return when {
-                targetPosition < 0 -> (targetPosition % itemCount + itemCount) % itemCount
-                targetPosition > itemCount -> targetPosition % itemCount
-                else -> targetPosition
-            }
+            return currentPosition + nextPositionSteps
         } else {
             var targetPosition = currentPosition + nextPositionSteps
             if (targetPosition < 0) {
