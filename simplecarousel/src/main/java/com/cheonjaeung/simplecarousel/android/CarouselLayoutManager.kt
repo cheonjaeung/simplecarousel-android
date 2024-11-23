@@ -106,6 +106,11 @@ open class CarouselLayoutManager : RecyclerView.LayoutManager, CarouselSmoothScr
     private var pendingPosition: Int = NO_POSITION
 
     /**
+     * A temporal storage for extra pixel offset when using [scrollToPositionWithOffset].
+     */
+    private var pendingScrollExtraOffset: Int = 0
+
+    /**
      * Constructs a [CarouselLayoutManager] with default options.
      */
     @Suppress("unused")
@@ -292,11 +297,20 @@ open class CarouselLayoutManager : RecyclerView.LayoutManager, CarouselSmoothScr
      */
     private fun updateAnchorInfoForLayout(anchorInfo: AnchorInfo, state: RecyclerView.State) {
         // Try update anchor info from pending states.
-        if (anchorInfo.updateFromPending(pendingPosition, pendingSavedState, layoutToLeftTop, state)) {
+        if (
+            anchorInfo.updateFromPending(
+                pendingPosition,
+                pendingScrollExtraOffset,
+                pendingSavedState,
+                layoutToLeftTop,
+                state
+            )
+        ) {
             return
         } else {
-            // Set useless pending position to no position cause it is invalid.
+            // Set pending position and offset to initial value cause it is now useless.
             pendingPosition = NO_POSITION
+            pendingScrollExtraOffset = 0
         }
 
         // Try update anchor info from existing children.
@@ -314,6 +328,7 @@ open class CarouselLayoutManager : RecyclerView.LayoutManager, CarouselSmoothScr
         super.onLayoutCompleted(state)
         pendingSavedState = null
         pendingPosition = NO_POSITION
+        pendingScrollExtraOffset = 0
         anchorInfo.invalidate()
     }
 
@@ -326,7 +341,18 @@ open class CarouselLayoutManager : RecyclerView.LayoutManager, CarouselSmoothScr
     }
 
     override fun scrollToPosition(position: Int) {
+        scrollToPositionWithOffset(position, 0)
+    }
+
+    /**
+     * Moves scroll position to the specified adapter position with extra pixel offset.
+     *
+     * @param position The adapter position to scroll to.
+     * @param offset Extra pixel offset.
+     */
+    fun scrollToPositionWithOffset(position: Int, offset: Int) {
         pendingPosition = position
+        pendingScrollExtraOffset = offset
         if (pendingSavedState != null) {
             pendingSavedState?.invalidateAnchor()
         }
@@ -1319,6 +1345,7 @@ open class CarouselLayoutManager : RecyclerView.LayoutManager, CarouselSmoothScr
          */
         fun updateFromPending(
             pendingPosition: Int,
+            pendingScrollExtraOffset: Int,
             pendingSavedState: SavedState?,
             layoutToLeftTop: Boolean,
             state: RecyclerView.State
@@ -1344,9 +1371,9 @@ open class CarouselLayoutManager : RecyclerView.LayoutManager, CarouselSmoothScr
 
             this.layoutToLeftTop = layoutToLeftTop
             this.coordinate = if (layoutToLeftTop) {
-                orientationHelper.endAfterPadding
+                orientationHelper.endAfterPadding - pendingScrollExtraOffset
             } else {
-                orientationHelper.startAfterPadding
+                orientationHelper.startAfterPadding + pendingScrollExtraOffset
             }
             return true
         }
