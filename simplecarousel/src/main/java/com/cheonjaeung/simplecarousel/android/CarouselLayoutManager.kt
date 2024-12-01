@@ -642,6 +642,7 @@ open class CarouselLayoutManager : RecyclerView.LayoutManager, CarouselSmoothScr
      * @return The adapter position of the first partially visible item or [RecyclerView.NO_POSITION] if there
      * are not any partially visible items.
      */
+    @Suppress("unused")
     fun findFirstVisibleItemPosition(): Int {
         val view = viewBoundsHelper.findPartiallyVisibleView(0, childCount)
         return if (view != null) getPosition(view) else RecyclerView.NO_POSITION
@@ -661,6 +662,7 @@ open class CarouselLayoutManager : RecyclerView.LayoutManager, CarouselSmoothScr
      * @return The adapter position of the first completely visible item or [RecyclerView.NO_POSITION] if there
      * are not any completely visible items.
      */
+    @Suppress("unused")
     fun findFirstCompletelyVisibleItemPosition(): Int {
         val view = viewBoundsHelper.findCompletelyVisibleView(0, childCount)
         return if (view != null) getPosition(view) else RecyclerView.NO_POSITION
@@ -680,6 +682,7 @@ open class CarouselLayoutManager : RecyclerView.LayoutManager, CarouselSmoothScr
      * @return The adapter position of the last partially visible item or [RecyclerView.NO_POSITION] if there
      * are not any partially visible items.
      */
+    @Suppress("unused")
     fun findLastVisibleItemPosition(): Int {
         val view = viewBoundsHelper.findPartiallyVisibleView(childCount - 1, -1)
         return if (view != null) getPosition(view) else RecyclerView.NO_POSITION
@@ -699,6 +702,7 @@ open class CarouselLayoutManager : RecyclerView.LayoutManager, CarouselSmoothScr
      * @return The adapter position of the last completely visible item or [RecyclerView.NO_POSITION] if there
      * are not any completely visible items.
      */
+    @Suppress("unused")
     fun findLastCompletelyVisibleItemPosition(): Int {
         val view = viewBoundsHelper.findCompletelyVisibleView(childCount - 1, -1)
         return if (view != null) getPosition(view) else RecyclerView.NO_POSITION
