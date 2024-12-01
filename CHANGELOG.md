@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.4.0
+
+_2024.12.01_
+
+### Changed
+
+- `CarouselSmoothScroller` is added to support better smooth scroll of carousel.
+- Snapping of `CarouselSnapHelper` is improved for circular mode enabled.
+- `CarouselLayoutManager` now supports `scrollToPositionWithOffset` method.
+
 ## 0.3.0
 
 _2024.10.06_
