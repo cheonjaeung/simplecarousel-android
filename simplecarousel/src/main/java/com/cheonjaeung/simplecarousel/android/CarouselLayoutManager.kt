@@ -382,16 +382,16 @@ open class CarouselLayoutManager : RecyclerView.LayoutManager, CarouselSmoothScr
         val firstChildPosition = getPosition(firstChild)
 
         if (assumedCircular) {
-            val stepsToLeftTop: Int
-            val stepsToRightBottom: Int
+            val steps: Int
+            val stepsOpposite: Int
             if (targetPosition < firstChildPosition) {
-                stepsToLeftTop = firstChildPosition - targetPosition
-                stepsToRightBottom = (itemCount - firstChildPosition) + targetPosition
+                steps = firstChildPosition - targetPosition
+                stepsOpposite = (itemCount - firstChildPosition) + targetPosition
             } else {
-                stepsToLeftTop = (itemCount - targetPosition) + firstChildPosition
-                stepsToRightBottom = targetPosition - firstChildPosition
+                steps = (itemCount - targetPosition) + firstChildPosition
+                stepsOpposite = targetPosition - firstChildPosition
             }
-            val scrollDirection = if ((stepsToLeftTop < stepsToRightBottom) != layoutToLeftTop) {
+            val scrollDirection = if ((steps < stepsOpposite) != layoutToLeftTop) {
                 DIRECTION_LEFT_TOP.toFloat()
             } else {
                 DIRECTION_RIGHT_BOTTOM.toFloat()
