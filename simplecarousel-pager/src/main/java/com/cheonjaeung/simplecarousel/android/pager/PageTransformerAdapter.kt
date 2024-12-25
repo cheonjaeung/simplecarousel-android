@@ -1,8 +1,11 @@
 package com.cheonjaeung.simplecarousel.android.pager
 
+import androidx.viewpager2.widget.ViewPager2
+import kotlin.math.abs
+
 internal class PageTransformerAdapter(
     private val carouselPager: CarouselPager
-) : CarouselPager.OnPageChangeCallback() {
+) : ViewPager2.OnPageChangeCallback() {
     override fun onPageScrolled(position: Int, positionOffset: Float, positionOffsetPixels: Int) {
         if (carouselPager.pageTransformer == null) {
             return

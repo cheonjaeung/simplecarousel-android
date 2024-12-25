@@ -12,13 +12,13 @@ import android.view.View
 import android.view.ViewGroup
 import androidx.annotation.IntDef
 import androidx.annotation.IntRange
-import androidx.annotation.Px
 import androidx.annotation.RequiresApi
 import androidx.annotation.RestrictTo
 import androidx.core.view.ViewCompat
 import androidx.recyclerview.widget.PagerSnapHelper
 import androidx.recyclerview.widget.RecyclerView
 import androidx.viewpager2.adapter.StatefulAdapter
+import androidx.viewpager2.widget.ViewPager2
 import com.cheonjaeung.simplecarousel.android.CarouselLayoutManager
 import kotlin.math.abs
 import kotlin.math.roundToInt
@@ -50,10 +50,6 @@ class CarouselPager @JvmOverloads constructor(
 
     /**
      * A [RecyclerView.Adapter] to provider page items on demand.
-     *
-     * It is recommended to use [androidx.viewpager2.adapter.FragmentStateAdapter] to use
-     * [Fragment][androidx.fragment.app.Fragment] as pages. But if pages are just [View], use
-     * [RecyclerView.Adapter] implementation.
      */
     var adapter: RecyclerView.Adapter<*>?
         get() = recyclerView.adapter
@@ -142,8 +138,8 @@ class CarouselPager @JvmOverloads constructor(
 
     private val dataSetChangeNotifier = DataSetChangeNotifier()
 
-    internal val pageChangeCallbacks: MutableList<OnPageChangeCallback> = mutableListOf()
-    internal var pageTransformer: PageTransformer? = null
+    internal val pageChangeCallbacks: MutableList<ViewPager2.OnPageChangeCallback> = mutableListOf()
+    internal var pageTransformer: ViewPager2.PageTransformer? = null
 
     private var savedRecyclerViewItemAnimatorExists: Boolean = false
     private var savedRecyclerViewItmeAnimator: RecyclerView.ItemAnimator? = null
@@ -374,26 +370,26 @@ class CarouselPager @JvmOverloads constructor(
     }
 
     /**
-     * Adds a [OnPageChangeCallback] to receive change changing and scrolling events.
+     * Adds a [ViewPager2.OnPageChangeCallback] to receive change changing and scrolling events.
      */
-    fun registerOnPageChangeCallback(onPageChangeCallback: OnPageChangeCallback) {
+    fun registerOnPageChangeCallback(onPageChangeCallback: ViewPager2.OnPageChangeCallback) {
         pageChangeCallbacks.add(onPageChangeCallback)
     }
 
     /**
-     * Removes a [OnPageChangeCallback] that was previously added to this pager.
+     * Removes a [ViewPager2.OnPageChangeCallback] that was previously added to this pager.
      */
-    fun unregisterOnPageChangeCallback(onPageChangeCallback: OnPageChangeCallback) {
+    fun unregisterOnPageChangeCallback(onPageChangeCallback: ViewPager2.OnPageChangeCallback) {
         pageChangeCallbacks.remove(onPageChangeCallback)
     }
 
     /**
-     * Sets a [PageTransformer] to apply transformation to the visible and attached pages.
+     * Sets a [ViewPager2.PageTransformer] to apply transformation to the visible and attached pages.
      *
-     * Note: Setting a [PageTransformer] disables dataset change animations of [RecyclerView] to
+     * Note: Setting a [ViewPager2.PageTransformer] disables dataset change animations of [RecyclerView] to
      * avoiding animation conflicts. Sets `null` to restore dataset change animations.
      */
-    fun setPageTransformer(transformer: PageTransformer?) {
+    fun setPageTransformer(transformer: ViewPager2.PageTransformer?) {
         if (transformer == pageTransformer) {
             return
         }
@@ -417,8 +413,8 @@ class CarouselPager @JvmOverloads constructor(
     }
 
     /**
-     * Requests a call to transform current visible and attached pages via added [PageTransformer].
-     * To set [PageTransformer], use [setPageTransformer] method.
+     * Requests a call to transform current visible and attached pages via added [ViewPager2.PageTransformer].
+     * To set [ViewPager2.PageTransformer], use [setPageTransformer] method.
      */
     fun requestTransform() {
         if (pageTransformer == null) {
@@ -608,50 +604,5 @@ class CarouselPager @JvmOverloads constructor(
         override fun onChanged() {
             scrollListenerAdapter.notifyDataSetChanged()
         }
-    }
-
-    /**
-     * Callback interface to receive scrolling and selecting events.
-     */
-    abstract class OnPageChangeCallback {
-        /**
-         * Callback that will be invoked when the scroll state is changed.
-         *
-         * @param state The new state. It can be one of [SCROLL_STATE_IDLE], [SCROLL_STATE_DRAGGING]
-         * or [SCROLL_STATE_SETTLING].
-         */
-        open fun onPageScrollStateChanged(@ScrollState state: Int) {}
-
-        /**
-         * Callback that will be invoked whenever the pager is scrolled. It is called either dragging
-         * by user interaction and programmatic scroll.
-         *
-         * @param position The position of the first displayed page.
-         * @param positionOffset Percentage value that describe how much the page is scrolled.
-         * @param positionOffsetPixels The pixel size indicating the offset from the position.
-         */
-        open fun onPageScrolled(position: Int, positionOffset: Float, @Px positionOffsetPixels: Int) {}
-
-        /**
-         * Callback that will be invoked when a new page is selected.
-         *
-         * @param position The position of the new selected page.
-         */
-        open fun onPageSelected(position: Int) {}
-    }
-
-    /**
-     * An interface invoked whenever a visible and attached page is scrolled. In this interface,
-     * pages can transformed by animation properties.
-     */
-    fun interface PageTransformer {
-        /**
-         * Applies a transformation to the given page.
-         *
-         * @param page The page view will transformed.
-         * @param position The relative position from current center page position. 0 means the front
-         * and center. For example, 1 is one page to the right, -2 is two pages to the left.
-         */
-        fun transformPage(page: View, position: Float)
     }
 }
