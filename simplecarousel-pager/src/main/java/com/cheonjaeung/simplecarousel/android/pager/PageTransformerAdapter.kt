@@ -19,8 +19,27 @@ internal class PageTransformerAdapter(
                 "LayoutManager returns null child view at the $i while transforming pages"
             )
             val currentPosition = layoutManager.getPosition(view)
-            val viewOffset = transformOffset + currentPosition - position
+            val diff = calculatePositionDiff(position, currentPosition, layoutManager.itemCount)
+            val viewOffset = transformOffset + diff
             carouselPager.pageTransformer?.transformPage(view, viewOffset)
+        }
+    }
+
+    private fun calculatePositionDiff(
+        reference: Int,
+        position: Int,
+        maxItemCount: Int
+    ): Int {
+        return if (carouselPager.circular) {
+            val steps = (position - reference + maxItemCount) % maxItemCount
+            val stepsOpposite = (reference - position + maxItemCount) % maxItemCount * -1
+            return if (abs(steps) < abs(stepsOpposite)) {
+                steps
+            } else {
+                stepsOpposite
+            }
+        } else {
+            position - reference
         }
     }
 }
