@@ -1,5 +1,6 @@
 package com.cheonjaeung.simplecarousel.android.pager
 
+import android.annotation.SuppressLint
 import android.content.Context
 import android.graphics.Rect
 import android.os.Build
@@ -8,6 +9,7 @@ import android.os.Parcelable
 import android.os.Parcelable.ClassLoaderCreator
 import android.util.AttributeSet
 import android.util.SparseArray
+import android.view.MotionEvent
 import android.view.View
 import android.view.ViewGroup
 import androidx.annotation.IntDef
@@ -127,6 +129,12 @@ class CarouselPager @JvmOverloads constructor(
         }
 
     /**
+     * If `true`, enables user interaction likes scroll and fling. Keyboard input cannot be disabled.
+     * Even if it is `false`, programmatic scroll through [setCurrentItem] still works.
+     */
+    var userInputEnabled = true
+
+    /**
      * Returns the number of [RecyclerView.ItemDecoration] count currently added to this [CarouselPager].
      */
     @Suppress("unused")
@@ -157,9 +165,10 @@ class CarouselPager @JvmOverloads constructor(
         )
         val circular = a.getBoolean(R.styleable.CarouselPager_circular, DEFAULT_CIRCULAR)
         val orientation = a.getInt(R.styleable.CarouselPager_android_orientation, DEFAULT_ORIENTATION)
+        userInputEnabled = a.getBoolean(R.styleable.CarouselPager_userInputEnabled, true)
         a.recycle()
 
-        recyclerView = RecyclerView(context)
+        recyclerView = CarouselPagerRecyclerView(context)
         recyclerView.id = View.generateViewId()
         recyclerView.layoutParams = LayoutParams(
             LayoutParams.MATCH_PARENT,
@@ -583,6 +592,17 @@ class CarouselPager @JvmOverloads constructor(
             override fun newArray(size: Int): Array<SavedState?> {
                 return arrayOfNulls(size)
             }
+        }
+    }
+
+    private inner class CarouselPagerRecyclerView(context: Context) : RecyclerView(context) {
+        @SuppressLint("ClickableViewAccessibility")
+        override fun onTouchEvent(e: MotionEvent?): Boolean {
+            return userInputEnabled && super.onTouchEvent(e)
+        }
+
+        override fun onInterceptTouchEvent(e: MotionEvent?): Boolean {
+            return userInputEnabled && super.onInterceptTouchEvent(e)
         }
     }
 
