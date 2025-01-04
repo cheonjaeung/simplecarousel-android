@@ -37,6 +37,7 @@ android {
 
 dependencies {
     implementation(project(":simplecarousel"))
+    implementation(project(":simplecarousel-pager"))
 
     implementation(libs.androidx.core)
     implementation(libs.androidx.appcompat)
