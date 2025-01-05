@@ -8,7 +8,11 @@ Add following dependency to download this library:
 
 ```kotlin
 dependencies {
+    // CarouselLayoutManager and core components
     implementation("com.cheonjaeung.simplecarousel.android:simplecarousel:<version>")
+
+    // CarouselPager and pager components (supported 0.5.0 or later version)
+    implementation("com.cheonjaeung.simplecarousel.android:simplecarousel-pager:<version>")
 }
 ```
 
@@ -36,8 +40,51 @@ You can set `circular` programmatically.
 
 ```kotlin
 val layoutManager = CarouselLayoutManager()
-layoutManager.circular = true|false
+layoutManager.circular = true
 ```
+
+## Pager
+
+This library provides pager components via `simplecarousel-pager` artifact.
+In this artifact, there is a `View` named `CarouselPager`.
+Place this view in your layout.
+
+```xml
+<com.cheonjaeung.simplecarousel.android.pager.CarouselPager
+    android:id="@+id/pager"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="horizontal" />
+```
+
+**Attributes**
+
+| Name                | Type                   | Description                    |
+|---------------------|------------------------|--------------------------------|
+| android:orientation | horizontal or vertical | Orientation of the pager       |
+| circular            | boolean                | Enable circular mode if `true` |
+| userInputEnabled    | boolean                | Enable user input if `true`    |
+
+The `CarouselPager` uses `RecyclerView.Adapter` like `ViewPager2`.
+Set an adapter to your `CarouselPager`.
+
+```kotlin
+val carouselPager = findViewById<CarouselPager>(R.id.pager)
+carouselPager.adapter = ExampleAdapter()
+```
+
+### Pager Events
+
+`CarouselPager` uses `ViewPager2`'s `OnPageChangeCallback` and `PageTransformer`.
+Callbacks and transformers can be used for both views.
+But if a callback is designed for `ViewPager2`, it can't used for `CarouselPager`.
+For example, `MarginPageTransformer` uses `ViewPager2` internally.
+You must use `CarouselMarginPageTransformer` instead of `MarginPageTransformer`.
+
+### CarouselFragmentStateAdapter
+
+`FragmentStateAdapter` of `ViewPager2` library supports only `ViewPager2`.
+Instead of it, this library provides `CarouselFragmentStateAdapter` for using fragments as pager items.
 
 ## License
 
