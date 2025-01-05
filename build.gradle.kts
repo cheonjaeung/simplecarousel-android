@@ -9,7 +9,7 @@ plugins {
 
 allprojects {
     group = "com.cheonjaeung.simplecarousel.android"
-    version = "0.4.0"
+    version = "0.5.0"
 
     repositories {
         google()

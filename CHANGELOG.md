@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.5.0
+
+_2025.01.05_
+
+### Changed
+
+- New `com.cheonjaeung.simplecarousel.android:simplecarousel-pager` artifact added.
+  It provides `CarouselPager`. This view supports pager behavior like `ViewPager2` but can circular.
+- Add `CarouselMarginPageTransformer` and `CarouselFragmentStateAdapter` for `CarouselPager`.
+
 ## 0.4.0
 
 _2024.12.01_
