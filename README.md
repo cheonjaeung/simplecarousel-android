@@ -18,6 +18,8 @@ dependencies {
 
 ## Getting Started
 
+![carousel-sample](docs/videos/carousel-sample.mp4)
+
 You can just set the `CarouselLayoutManager` to make your `RecyclerView` work as a carousel.
 It can be set programmatically or as a XML attribute.
 
@@ -44,6 +46,8 @@ layoutManager.circular = true
 ```
 
 ## Pager
+
+![pager-sample](docs/videos/pager-sample.mp4)
 
 This library provides pager components via `simplecarousel-pager` artifact.
 In this artifact, there is a `View` named `CarouselPager`.
