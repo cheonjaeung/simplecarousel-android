@@ -8,11 +8,10 @@ plugins {
 
 android {
     namespace = "${project.group}"
-    compileSdk = 34
+    compileSdk = 36
 
     defaultConfig {
         minSdk = 21
-        targetSdk = 34
     }
 
     compileOptions {

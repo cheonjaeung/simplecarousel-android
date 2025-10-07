@@ -8,12 +8,10 @@ plugins {
 
 android {
     namespace = "${project.group}.pager"
-    compileSdk = 34
+    compileSdk = 36
 
     defaultConfig {
         minSdk = 21
-        targetSdk = 34
-
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
