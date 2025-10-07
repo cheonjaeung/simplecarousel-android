@@ -1,5 +1,3 @@
-import com.vanniktech.maven.publish.SonatypeHost
-
 plugins {
     alias(libs.plugins.android.library)
     alias(libs.plugins.kotlin.android)
@@ -8,11 +6,10 @@ plugins {
 
 android {
     namespace = "${project.group}"
-    compileSdk = 34
+    compileSdk = 36
 
     defaultConfig {
         minSdk = 21
-        targetSdk = 34
     }
 
     compileOptions {
@@ -31,7 +28,7 @@ dependencies {
 }
 
 mavenPublishing {
-    publishToMavenCentral(SonatypeHost.CENTRAL_PORTAL)
+    publishToMavenCentral()
     signAllPublications()
     coordinates("${project.group}", "simplecarousel", "${project.version}")
 

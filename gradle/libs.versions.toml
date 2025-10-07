@@ -1,26 +1,25 @@
 [versions]
-kotlin = "1.9.0"
-androidGradlePlugin = "8.5.1"
+kotlin = "2.2.20"
+androidGradlePlugin = "8.13.0"
 
 [plugins]
 kotlin-android = { id = "org.jetbrains.kotlin.android", version.ref = "kotlin" }
 android-application = { id = "com.android.application", version.ref = "androidGradlePlugin" }
 android-library = { id = "com.android.library", version.ref = "androidGradlePlugin" }
-maven-publish = { id = "com.vanniktech.maven.publish", version = "0.28.0" }
+maven-publish = { id = "com.vanniktech.maven.publish", version = "0.34.0" }
 
 [libraries]
-# Library Dependencies
-androidx-core = { group = "androidx.core", name = "core", version = "1.13.1" }
-androidx-recyclerview = { group = "androidx.recyclerview", name = "recyclerview", version = "1.3.2" }
+androidx-core = { group = "androidx.core", name = "core", version = "1.17.0" }
+androidx-recyclerview = { group = "androidx.recyclerview", name = "recyclerview", version = "1.4.0" }
 androidx-viewpager2 = { group = "androidx.viewpager2", name = "viewpager2", version = "1.1.0" }
 
 # Test Dependencies
 junit = { group = "junit", name = "junit", version = "4.13.2" }
-androidx-test-ext-junit = { group = "androidx.test.ext", name = "junit", version = "1.2.1" }
-androidx-test-espresso-core = { group = "androidx.test.espresso", name = "espresso-core", version = "3.6.1" }
+androidx-test-ext-junit = { group = "androidx.test.ext", name = "junit", version = "1.3.0" }
+androidx-test-espresso-core = { group = "androidx.test.espresso", name = "espresso-core", version = "3.7.0" }
 
 # Sample Dependencies
-android-material = { group = "com.google.android.material", name = "material", version = "1.12.0" }
-androidx-appcompat = { group = "androidx.appcompat", name = "appcompat", version = "1.7.0" }
-androidx-activity = { group = "androidx.activity", name = "activity", version = "1.9.0" }
-androidx-constraintlayout = { group = "androidx.constraintlayout", name = "constraintlayout", version = "2.1.4" }
+android-material = { group = "com.google.android.material", name = "material", version = "1.13.0" }
+androidx-appcompat = { group = "androidx.appcompat", name = "appcompat", version = "1.7.1" }
+androidx-activity = { group = "androidx.activity", name = "activity", version = "1.11.0" }
+androidx-constraintlayout = { group = "androidx.constraintlayout", name = "constraintlayout", version = "2.2.1" }
