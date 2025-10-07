@@ -97,7 +97,7 @@ abstract class CarouselFragmentStateAdapter : RecyclerView.Adapter<FragmentViewH
     }
 
     override fun restoreState(savedState: Parcelable) {
-        if (savedStates.isEmpty || fragments.isEmpty) {
+        if (savedStates.isEmpty() || fragments.isEmpty()) {
             throw IllegalStateException("The adapter is not fresh while restoring state")
         }
 
@@ -113,8 +113,10 @@ abstract class CarouselFragmentStateAdapter : RecyclerView.Adapter<FragmentViewH
             if (isValidKey(key, KEY_PREFIX_FRAGMENT)) {
                 val itemId = parseIdFromKey(key, KEY_PREFIX_FRAGMENT)
                 val fragment = fragmentManager.getFragment(savedState, key)
-                fragments.put(itemId, fragment)
-                continue
+                if (fragment != null) {
+                    fragments.put(itemId, fragment)
+                    continue
+                }
             }
 
             if (isValidKey(key, KEY_PREFIX_STATE)) {
@@ -124,16 +126,18 @@ abstract class CarouselFragmentStateAdapter : RecyclerView.Adapter<FragmentViewH
                 } else {
                     savedState.getParcelable(key)
                 }
-                if (containsItem(itemId)) {
-                    savedStates.put(itemId, state)
+                if (state != null) {
+                    if (containsItem(itemId)) {
+                        savedStates.put(itemId, state)
+                    }
+                    continue
                 }
-                continue
             }
 
             throw IllegalArgumentException("Unexpected key found while restoring state: $key")
         }
 
-        if (!fragments.isEmpty) {
+        if (!fragments.isEmpty()) {
             isInGracePeriod = true
             hasStaleFragments = true
             gcFragments()
@@ -428,7 +432,9 @@ abstract class CarouselFragmentStateAdapter : RecyclerView.Adapter<FragmentViewH
             val listeners = fragmentEventDispatcher.dispatchPreSavedInstanceState(fragment)
             val savedState = fragmentManager.saveFragmentInstanceState(fragment)
             fragmentEventDispatcher.dispatchPostEvents(listeners)
-            savedStates.put(targetId, savedState)
+            if (savedState != null) {
+                savedStates.put(targetId, savedState)
+            }
         }
 
         val listeners = fragmentEventDispatcher.dispatchPreRemove(fragment)
@@ -565,7 +571,7 @@ abstract class CarouselFragmentStateAdapter : RecyclerView.Adapter<FragmentViewH
                 return
             }
 
-            if (fragments.isEmpty || itemCount == 0) {
+            if (fragments.isEmpty() || itemCount == 0) {
                 return
             }
 
