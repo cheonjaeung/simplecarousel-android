@@ -6,7 +6,7 @@ androidGradlePlugin = "8.13.0"
 kotlin-android = { id = "org.jetbrains.kotlin.android", version.ref = "kotlin" }
 android-application = { id = "com.android.application", version.ref = "androidGradlePlugin" }
 android-library = { id = "com.android.library", version.ref = "androidGradlePlugin" }
-maven-publish = { id = "com.vanniktech.maven.publish", version = "0.28.0" }
+maven-publish = { id = "com.vanniktech.maven.publish", version = "0.34.0" }
 
 [libraries]
 androidx-core = { group = "androidx.core", name = "core", version = "1.13.1" }
