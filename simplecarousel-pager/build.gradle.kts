@@ -24,7 +24,6 @@ android {
 }
 
 dependencies {
-    implementation(libs.androidx.core)
     api(libs.androidx.recyclerview)
     api(libs.androidx.viewpager2)
     api(project(":simplecarousel"))
