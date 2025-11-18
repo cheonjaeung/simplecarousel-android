@@ -23,7 +23,6 @@ android {
 }
 
 dependencies {
-    implementation(libs.androidx.core)
     api(libs.androidx.recyclerview)
 }
 
