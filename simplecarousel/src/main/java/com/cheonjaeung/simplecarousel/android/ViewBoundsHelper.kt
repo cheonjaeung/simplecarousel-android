@@ -95,8 +95,7 @@ class ViewBoundsHelper(private val parentInfoCallback: ParentInfoCallback) {
         parentStart: Int,
         parentEnd: Int
     ): Boolean {
-        if (childEnd < parentStart || childStart > parentEnd) return false
-        return childStart > parentStart || childEnd < parentEnd
+        return childEnd > parentStart && childStart < parentEnd
     }
 
     private fun isCompletelyVisible(
